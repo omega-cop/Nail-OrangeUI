@@ -158,10 +158,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, onClose, shopName, 
            <div className={`absolute top-0 left-0 right-0 h-2 ${themeStyles.topBar}`} />
 
            {/* Header */}
-           <div className="text-center mb-8 pt-2">
-                <div className={`w-16 h-16 bg-gradient-to-br ${themeStyles.iconGradient} rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4 shadow-lg ${themeStyles.iconShadow}`}>
-                    {shopName.charAt(0).toUpperCase()}
-                </div>
+           <div className="text-center mb-8 pt-6">
                 <h1 className="text-2xl font-bold text-gray-800 tracking-tight">{shopName}</h1>
                 <p className="text-gray-400 text-sm mt-1 uppercase tracking-widest font-medium">Hóa Đơn Dịch Vụ</p>
            </div>
@@ -225,12 +222,7 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, onClose, shopName, 
 
            {/* Footer */}
            <div className="text-center border-t border-gray-100 pt-6">
-                <p className="text-gray-400 text-xs italic mb-4">Cảm ơn quý khách và hẹn gặp lại!</p>
-                
-                {/* Visual Fake Barcode */}
-                <div className="h-10 w-4/5 mx-auto bg-gray-800 opacity-20" style={{
-                    maskImage: 'repeating-linear-gradient(90deg, black, black 2px, transparent 2px, transparent 5px)'
-                }}></div>
+                <p className="text-gray-400 text-xs italic mb-2">Cảm ơn quý khách và hẹn gặp lại!</p>
                 <p className="text-[10px] text-gray-300 mt-1 tracking-widest">{bill.id.toUpperCase().slice(-12)}</p>
            </div>
         </div>
