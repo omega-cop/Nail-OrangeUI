@@ -1,0 +1,74 @@
+/* Base styles */
+body {
+    background: linear-gradient(135deg, #FFF7ED 0%, #FFFFFF 50%, #FFEDD5 100%);
+    background-attachment: fixed;
+    font-family: 'Noto Sans', sans-serif;
+    color: #1F2937;
+    -webkit-tap-highlight-color: transparent;
+    min-height: 100vh;
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(249, 115, 22, 0.2); /* Orange tint */
+    border-radius: 20px;
+}
+
+.custom-scrollbar:hover::-webkit-scrollbar-thumb {
+    background-color: rgba(249, 115, 22, 0.4);
+}
+
+/* Hide Scrollbar (for horizontal scrolling lists) */
+.no-scrollbar::-webkit-scrollbar {
+    display: none;
+}
+
+.no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+}
+
+/* Animation utilities */
+@keyframes bounce-short {
+    0%, 100% {
+        transform: translateY(0);
+        animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+    }
+    50% {
+        transform: translateY(-25%);
+        animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+    }
+}
+
+.animate-bounce-short {
+    animation: bounce-short 1s infinite;
+}
+
+/* Form inputs styling override for cleaner look */
+input, select, textarea {
+    transition: all 0.3s ease;
+}
+
+/* Glassmorphism Utilities */
+.glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.glass-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 8px 32px 0 rgba(249, 115, 22, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+}
