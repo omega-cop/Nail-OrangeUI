@@ -34,6 +34,7 @@ const BillList: React.FC<BillListProps> = ({ bills, onEdit, onDelete, onAddNew, 
   const [filterDate, setFilterDate] = useState('');
   const [viewingBill, setViewingBill] = useState<Bill | null>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   
   // Lazy Load States
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -85,6 +86,18 @@ const BillList: React.FC<BillListProps> = ({ bills, onEdit, onDelete, onAddNew, 
   const handleClearDate = () => {
       setFilterDate('');
       if (onClearTargetDate) onClearTargetDate();
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, id: string) => {
+      e.stopPropagation();
+      setDeleteConfirmId(id);
+  };
+
+  const confirmDelete = () => {
+      if (deleteConfirmId) {
+          onDelete(deleteConfirmId);
+          setDeleteConfirmId(null);
+      }
   };
 
   // 1. Filter and Sort ALL bills
@@ -250,7 +263,7 @@ const BillList: React.FC<BillListProps> = ({ bills, onEdit, onDelete, onAddNew, 
                                     <PencilIcon className="w-5 h-5" />
                                 </button>
                                 <button 
-                                    onClick={(e) => { e.stopPropagation(); onDelete(bill.id); }} 
+                                    onClick={(e) => handleDeleteClick(e, bill.id)} 
                                     className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
                                     title="Xóa"
                                 >
@@ -304,6 +317,32 @@ const BillList: React.FC<BillListProps> = ({ bills, onEdit, onDelete, onAddNew, 
         >
           <ArrowUpIcon className="w-6 h-6" />
         </button>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirmId && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4" onClick={() => setDeleteConfirmId(null)}>
+            <div className="bg-white w-full max-w-sm rounded-3xl shadow-floating p-6 animate-in fade-in zoom-in duration-200" onClick={(e) => e.stopPropagation()}>
+                <h3 className="text-xl font-bold text-text-main mb-2">Xác nhận xóa</h3>
+                <p className="text-text-light mb-6">
+                    Bạn có chắc chắn muốn xóa hóa đơn này không? Hành động này không thể hoàn tác.
+                </p>
+                <div className="flex justify-end gap-3">
+                    <button 
+                        onClick={() => setDeleteConfirmId(null)} 
+                        className="px-5 py-2.5 bg-gray-100 text-text-main rounded-2xl font-bold hover:bg-gray-200 transition-colors"
+                    >
+                        Hủy
+                    </button>
+                    <button 
+                        onClick={confirmDelete} 
+                        className="px-5 py-2.5 bg-red-500 text-white rounded-2xl font-bold hover:bg-red-600 transition-colors shadow-lg shadow-red-500/30"
+                    >
+                        Xóa
+                    </button>
+                </div>
+            </div>
+        </div>
       )}
     </div>
   );
