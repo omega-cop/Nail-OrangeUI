@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import type { Bill, Booking, View } from './types';
 import useBills from './hooks/useBills';
@@ -41,9 +42,17 @@ const App: React.FC = () => {
   const [isNavVisible, setIsNavVisible] = useState(true);
   const lastScrollY = useRef(0);
 
-  // Notification / Booking Check Logic
-  const [dueBooking, setDueBooking] = useState<Booking | null>(null);
+  // --- Notification / Booking Check Logic ---
+  // Using a queue for multiple concurrent notifications
+  const [dueBookingQueue, setDueBookingQueue] = useState<Booking[]>([]);
   const [notifiedBookingIds, setNotifiedBookingIds] = useState<Set<string>>(new Set());
+  
+  // Snooze Logic
+  const [isSnoozeMode, setIsSnoozeMode] = useState(false);
+  const [snoozeDuration, setSnoozeDuration] = useState<number | null>(null);
+
+  // Persist Tab Selection in BillList
+  const [activeListTab, setActiveListTab] = useState<'bills' | 'bookings'>('bills');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const settingsMenuRef = useRef<HTMLDivElement>(null);
@@ -86,10 +95,11 @@ const App: React.FC = () => {
   useEffect(() => {
       const checkBookings = () => {
           const now = new Date();
+          const newDueBookings: Booking[] = [];
+          
           bookings.forEach(booking => {
               const bookingDate = new Date(booking.date);
               // Check if time matches current minute AND hasn't been notified yet
-              // Simple check: same year, month, day, hour, minute
               if (
                   bookingDate.getFullYear() === now.getFullYear() &&
                   bookingDate.getMonth() === now.getMonth() &&
@@ -98,8 +108,13 @@ const App: React.FC = () => {
                   bookingDate.getMinutes() === now.getMinutes() &&
                   !notifiedBookingIds.has(booking.id)
               ) {
-                  setDueBooking(booking);
-                  setNotifiedBookingIds(prev => new Set(prev).add(booking.id));
+                   // Check if already in queue to avoid duplicates in state
+                   setDueBookingQueue(prevQueue => {
+                       if (prevQueue.some(b => b.id === booking.id)) return prevQueue;
+                       return [...prevQueue, booking];
+                   });
+                   
+                   setNotifiedBookingIds(prev => new Set(prev).add(booking.id));
               }
           });
       };
@@ -239,6 +254,7 @@ const App: React.FC = () => {
   
   const handleAddNewBill = () => {
       createModeRef.current = 'bill';
+      setActiveListTab('bills'); // Prepare tab for return
       setSelectedBill(null);
       setSelectedBooking(null);
       setCurrentView('editor');
@@ -246,6 +262,7 @@ const App: React.FC = () => {
 
   const handleAddNewBooking = () => {
       createModeRef.current = 'booking';
+      setActiveListTab('bookings'); // Prepare tab for return
       setSelectedBill(null);
       setSelectedBooking(null);
       setCurrentView('editor');
@@ -279,32 +296,73 @@ const App: React.FC = () => {
   const handleConvertToBill = (booking: Booking) => {
       if (window.confirm(`Xác nhận chuyển lịch hẹn của "${booking.customerName}" thành hóa đơn?`)) {
           const { id, ...billData } = booking;
-          addBill(billData); // Create new bill from booking
+          const currentTimestamp = new Date().toISOString();
+          const newBill = {
+              ...billData,
+              date: currentTimestamp
+          };
+          addBill(newBill); 
           deleteBooking(booking.id);
+          alert("Đã chuyển thành hóa đơn thành công!");
       }
   };
 
-  // --- Notification Handlers ---
+  // --- Notification / Queue Handlers ---
+  const currentDueBooking = dueBookingQueue.length > 0 ? dueBookingQueue[0] : null;
+
+  const processNextBooking = () => {
+      setDueBookingQueue(prev => prev.slice(1));
+      // Reset states
+      setIsSnoozeMode(false);
+      setSnoozeDuration(null);
+      setShowDeleteConfirmForDue(false);
+  };
+
   const confirmDueBooking = () => {
-      if (dueBooking) {
-          const { id, ...billData } = dueBooking;
-          addBill(billData);
-          deleteBooking(dueBooking.id);
-          setDueBooking(null);
+      if (currentDueBooking) {
+          const { id, ...billData } = currentDueBooking;
+          // Set to current time when converting
+          const newBill = { ...billData, date: new Date().toISOString() };
+          addBill(newBill);
+          deleteBooking(currentDueBooking.id);
+          processNextBooking();
       }
   };
 
-  const keepDueBooking = () => {
-      setDueBooking(null);
+  const openSnoozeOptions = () => {
+      setIsSnoozeMode(true);
+  };
+
+  const cancelSnooze = () => {
+      setIsSnoozeMode(false);
+      setSnoozeDuration(null);
+  };
+
+  const confirmSnooze = () => {
+      if (currentDueBooking && snoozeDuration) {
+          const newDate = new Date(new Date().getTime() + snoozeDuration * 60000);
+          const updatedBooking = { ...currentDueBooking, date: newDate.toISOString() };
+          
+          updateBooking(updatedBooking);
+          // Note: updateBooking updates localStorage.
+          // Since it's rescheduled for later, we remove it from the current "Due" queue.
+          // We also need to remove it from `notifiedBookingIds` so it triggers again later.
+          setNotifiedBookingIds(prev => {
+              const next = new Set(prev);
+              next.delete(currentDueBooking.id);
+              return next;
+          });
+
+          processNextBooking();
+      }
   };
   
   const [showDeleteConfirmForDue, setShowDeleteConfirmForDue] = useState(false);
 
   const deleteDueBooking = () => {
-      if (dueBooking) {
-          deleteBooking(dueBooking.id);
-          setDueBooking(null);
-          setShowDeleteConfirmForDue(false);
+      if (currentDueBooking) {
+          deleteBooking(currentDueBooking.id);
+          processNextBooking();
       }
   };
 
@@ -355,6 +413,7 @@ const App: React.FC = () => {
             onDeleteBooking={deleteBooking}
             onConvertToBill={handleConvertToBill}
             onAddNewBooking={handleAddNewBooking}
+            initialTab={activeListTab}
         />;
     }
   };
@@ -454,7 +513,7 @@ const App: React.FC = () => {
       )}
 
       {/* Booking Due Notification Popup */}
-      {dueBooking && !showDeleteConfirmForDue && (
+      {currentDueBooking && !showDeleteConfirmForDue && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[110] p-4 animate-in fade-in duration-300">
               <div className="bg-white p-6 rounded-3xl shadow-floating w-full max-w-sm border-2 border-primary/20 relative">
                   <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 w-20 h-20 bg-white rounded-full p-2 shadow-lg">
@@ -466,36 +525,73 @@ const App: React.FC = () => {
                   <div className="mt-8 text-center">
                       <h3 className="text-xl font-bold text-text-main">Nhắc Hẹn</h3>
                       <p className="text-gray-500 mt-2 text-sm">
-                          Lịch hẹn của <strong className="text-primary text-base">{dueBooking.customerName}</strong>
+                          Lịch hẹn của <strong className="text-primary text-base">{currentDueBooking.customerName}</strong>
                       </p>
                       <p className="font-semibold text-text-main text-lg mt-1">
-                          {formatSpecificDateTime(dueBooking.date)}
+                          {formatSpecificDateTime(currentDueBooking.date)}
                       </p>
+                      {dueBookingQueue.length > 1 && (
+                          <p className="text-xs text-gray-400 mt-2">
+                              (Còn {dueBookingQueue.length - 1} thông báo khác)
+                          </p>
+                      )}
                   </div>
 
-                  <div className="mt-8 flex flex-col gap-3">
-                      <button 
-                          onClick={confirmDueBooking}
-                          className="w-full py-3 bg-primary text-white rounded-2xl font-bold hover:bg-primary-hover shadow-lg shadow-primary/30 flex items-center justify-center gap-2"
-                      >
-                          <ArrowRightOnRectangleIcon className="w-5 h-5"/>
-                          Chuyển sang hóa đơn
-                      </button>
-                      <button 
-                          onClick={keepDueBooking}
-                          className="w-full py-3 bg-white border-2 border-gray-100 text-text-main rounded-2xl font-bold hover:bg-gray-50 flex items-center justify-center gap-2"
-                      >
-                          <CheckIcon className="w-5 h-5 text-gray-400"/>
-                          Giữ lịch hẹn
-                      </button>
-                      <button 
-                          onClick={() => setShowDeleteConfirmForDue(true)}
-                          className="w-full py-3 bg-white text-red-500 rounded-2xl font-bold hover:bg-red-50 flex items-center justify-center gap-2"
-                      >
-                          <TrashIcon className="w-5 h-5"/>
-                          Xóa lịch hẹn
-                      </button>
-                  </div>
+                  {!isSnoozeMode ? (
+                      <div className="mt-8 flex flex-col gap-3">
+                          <button 
+                              onClick={confirmDueBooking}
+                              className="w-full py-3 bg-primary text-white rounded-2xl font-bold hover:bg-primary-hover shadow-lg shadow-primary/30 flex items-center justify-center gap-2"
+                          >
+                              <ArrowRightOnRectangleIcon className="w-5 h-5"/>
+                              Chuyển sang hóa đơn
+                          </button>
+                          <button 
+                              onClick={openSnoozeOptions}
+                              className="w-full py-3 bg-white border-2 border-gray-100 text-text-main rounded-2xl font-bold hover:bg-gray-50 flex items-center justify-center gap-2"
+                          >
+                              <CheckIcon className="w-5 h-5 text-gray-400"/>
+                              Giữ lịch hẹn
+                          </button>
+                          <button 
+                              onClick={() => setShowDeleteConfirmForDue(true)}
+                              className="w-full py-3 bg-white text-red-500 rounded-2xl font-bold hover:bg-red-50 flex items-center justify-center gap-2"
+                          >
+                              <TrashIcon className="w-5 h-5"/>
+                              Xóa lịch hẹn
+                          </button>
+                      </div>
+                  ) : (
+                      <div className="mt-6">
+                           <p className="text-center text-sm font-semibold text-text-light mb-3">Chờ thêm:</p>
+                           <div className="grid grid-cols-2 gap-3 mb-6">
+                               {[5, 10, 15, 30].map(mins => (
+                                   <button
+                                      key={mins}
+                                      onClick={() => setSnoozeDuration(mins)}
+                                      className={`py-2 rounded-xl border-2 font-bold transition-all ${snoozeDuration === mins ? 'border-primary bg-pink-50 text-primary' : 'border-gray-100 bg-white text-gray-500 hover:bg-gray-50'}`}
+                                   >
+                                       {mins} phút
+                                   </button>
+                               ))}
+                           </div>
+                           <div className="flex gap-3">
+                                <button 
+                                    onClick={cancelSnooze}
+                                    className="flex-1 py-3 bg-gray-100 text-text-main rounded-2xl font-bold hover:bg-gray-200"
+                                >
+                                    Hủy
+                                </button>
+                                <button 
+                                    onClick={confirmSnooze}
+                                    disabled={!snoozeDuration}
+                                    className={`flex-1 py-3 rounded-2xl font-bold text-white transition-all shadow-lg ${snoozeDuration ? 'bg-primary hover:bg-primary-hover shadow-primary/30' : 'bg-gray-300 cursor-not-allowed'}`}
+                                >
+                                    Xác nhận
+                                </button>
+                           </div>
+                      </div>
+                  )}
               </div>
           </div>
       )}
