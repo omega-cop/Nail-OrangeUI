@@ -268,12 +268,14 @@ const App: React.FC = () => {
     setSelectedBill(bill);
     setSelectedBooking(null);
     setCurrentView('editor');
+    setActiveListTab('bills'); // Ensure we return to bills tab
   }, []);
 
   const handleEditBooking = useCallback((booking: Booking) => {
     setSelectedBooking(booking);
     setSelectedBill(null);
     setCurrentView('editor');
+    setActiveListTab('bookings'); // Ensure we return to bookings tab
   }, []);
   
   const handleAddNewBill = () => {
@@ -443,6 +445,7 @@ const App: React.FC = () => {
             onConvertToBill={handleConvertToBill}
             onAddNewBooking={handleAddNewBooking}
             initialTab={activeListTab}
+            onTabChange={setActiveListTab} // Allow child to update parent tab state
         />;
     }
   };
