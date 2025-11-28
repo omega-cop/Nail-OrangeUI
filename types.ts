@@ -44,4 +44,11 @@ export interface Booking extends Bill {
   createdAt?: string; // Thời gian tạo lịch, dùng để tính tiến độ
 }
 
+export interface Customer {
+  id: string;
+  name: string;
+  phone?: string;
+  dob?: string; // ISO Date YYYY-MM-DD
+}
+
 export type View = 'list' | 'editor' | 'dashboard' | 'services' | 'customers' | 'revenue-calendar';
