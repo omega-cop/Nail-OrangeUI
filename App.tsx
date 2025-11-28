@@ -339,6 +339,30 @@ const App: React.FC = () => {
       }
   };
 
+  // --- Cascade Delete Customer Logic ---
+  const handleFullCustomerDelete = (customer: { id?: string, name: string }) => {
+      // 1. Delete all bills for this customer
+      const customerNameNormalized = customer.name.toLowerCase().trim();
+      
+      bills.forEach(b => {
+          if (b.customerName.toLowerCase().trim() === customerNameNormalized) {
+              deleteBill(b.id);
+          }
+      });
+
+      // 2. Delete all bookings for this customer
+      bookings.forEach(b => {
+          if (b.customerName.toLowerCase().trim() === customerNameNormalized) {
+              deleteBooking(b.id);
+          }
+      });
+
+      // 3. Delete profile if exists
+      if (customer.id) {
+          deleteCustomer(customer.id);
+      }
+  };
+
   // --- Notification / Queue Handlers ---
   const currentDueBooking = dueBookingQueue.length > 0 ? dueBookingQueue[0] : null;
 
@@ -436,7 +460,7 @@ const App: React.FC = () => {
           customers={customers}
           onAddCustomer={addCustomer}
           onUpdateCustomer={updateCustomer}
-          onDeleteCustomer={deleteCustomer}
+          onDeleteCustomer={handleFullCustomerDelete}
         />;
       case 'revenue-calendar':
         return <RevenueCalendar bills={bills} onBack={() => setCurrentView('dashboard')} onSelectDate={(date) => { setTargetDate(date); setCurrentView('list'); }} />;
