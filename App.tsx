@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import type { Bill, View } from './types';
+import type { Bill, Booking, View } from './types';
 import useBills from './hooks/useBills';
 import useServices from './hooks/useServices';
+import useBookings from './hooks/useBookings';
 import { useShopSettings } from './hooks/useShopSettings';
 import BillList from './components/BillList';
 import BillEditor from './components/BillEditor';
@@ -9,7 +10,8 @@ import Dashboard from './components/Dashboard';
 import ServiceManager from './components/ServiceManager';
 import CustomerList from './components/CustomerList';
 import RevenueCalendar from './components/RevenueCalendar';
-import { ListBulletIcon, TagIcon, HomeIcon, UsersIcon, CloudArrowDownIcon, CloudArrowUpIcon, PencilIcon, Cog6ToothIcon, SwatchIcon } from './components/icons';
+import { ListBulletIcon, TagIcon, HomeIcon, UsersIcon, CloudArrowDownIcon, CloudArrowUpIcon, Cog6ToothIcon, SwatchIcon, BellIcon, ArrowRightOnRectangleIcon, CheckIcon, TrashIcon } from './components/icons';
+import { formatSpecificDateTime } from './utils/dateUtils';
 
 const App: React.FC = () => {
   const { bills, addBill, updateBill, deleteBill, restoreBills } = useBills();
@@ -17,10 +19,12 @@ const App: React.FC = () => {
       services, addService, updateService, deleteService, restoreServices,
       categories, addCategory, updateCategory, deleteCategory, restoreCategories, reorderCategories
   } = useServices();
+  const { bookings, addBooking, updateBooking, deleteBooking } = useBookings();
   const { shopName, updateShopName, billTheme, updateBillTheme } = useShopSettings();
   
   const [currentView, setCurrentView] = useState<View>('dashboard');
   const [selectedBill, setSelectedBill] = useState<Bill | null>(null);
+  const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);
   
   // State for Date Navigation (Calendar -> List)
@@ -37,8 +41,13 @@ const App: React.FC = () => {
   const [isNavVisible, setIsNavVisible] = useState(true);
   const lastScrollY = useRef(0);
 
+  // Notification / Booking Check Logic
+  const [dueBooking, setDueBooking] = useState<Booking | null>(null);
+  const [notifiedBookingIds, setNotifiedBookingIds] = useState<Set<string>>(new Set());
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const settingsMenuRef = useRef<HTMLDivElement>(null);
+  const createModeRef = useRef<'bill' | 'booking'>('bill');
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -73,18 +82,47 @@ const App: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // --- Booking Timer Logic ---
+  useEffect(() => {
+      const checkBookings = () => {
+          const now = new Date();
+          bookings.forEach(booking => {
+              const bookingDate = new Date(booking.date);
+              // Check if time matches current minute AND hasn't been notified yet
+              // Simple check: same year, month, day, hour, minute
+              if (
+                  bookingDate.getFullYear() === now.getFullYear() &&
+                  bookingDate.getMonth() === now.getMonth() &&
+                  bookingDate.getDate() === now.getDate() &&
+                  bookingDate.getHours() === now.getHours() &&
+                  bookingDate.getMinutes() === now.getMinutes() &&
+                  !notifiedBookingIds.has(booking.id)
+              ) {
+                  setDueBooking(booking);
+                  setNotifiedBookingIds(prev => new Set(prev).add(booking.id));
+              }
+          });
+      };
+
+      const intervalId = setInterval(checkBookings, 10000); // Check every 10 seconds
+      return () => clearInterval(intervalId);
+  }, [bookings, notifiedBookingIds]);
+
+
   const handleDownloadData = useCallback(() => {
     try {
       const billsData = localStorage.getItem('nailSpaBills') || '[]';
       const servicesData = localStorage.getItem('nailSpaServices') || '[]';
       const categoriesData = localStorage.getItem('nailSpaCategories') || '[]';
       const settingsData = localStorage.getItem('nailSpaShopSettings') || '{"shopName": "Nail Spa"}';
+      const bookingsData = localStorage.getItem('nailSpaBookings') || '[]';
       
       const backupData = {
         bills: JSON.parse(billsData),
         services: JSON.parse(servicesData),
         categories: JSON.parse(categoriesData),
-        settings: JSON.parse(settingsData)
+        settings: JSON.parse(settingsData),
+        bookings: JSON.parse(bookingsData)
       };
 
       const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
@@ -130,7 +168,9 @@ const App: React.FC = () => {
                 if (data.settings.shopName) updateShopName(data.settings.shopName);
                 if (data.settings.billTheme) updateBillTheme(data.settings.billTheme);
             }
+            // Bookings are not restored here explicitly in the old logic but should be in future
             alert('Dữ liệu đã được khôi phục thành công.');
+            window.location.reload(); 
           }
         } else {
           alert('Tệp không hợp lệ. Vui lòng đảm bảo tệp chứa dữ liệu hóa đơn và dịch vụ.');
@@ -179,53 +219,110 @@ const App: React.FC = () => {
 
   const customerNames = useMemo(() => {
     const names = bills.map(bill => bill.customerName.trim());
-    return [...new Set(names)].filter(name => name); // Get unique, non-empty names
-  }, [bills]);
+    const bookingNames = bookings.map(b => b.customerName.trim());
+    return [...new Set([...names, ...bookingNames])].filter(name => name); 
+  }, [bills, bookings]);
+
+  // --- Bill/Booking Handlers ---
 
   const handleEditBill = useCallback((bill: Bill) => {
     setSelectedBill(bill);
+    setSelectedBooking(null);
     setCurrentView('editor');
   }, []);
 
-  const handleAddNewBill = useCallback(() => {
+  const handleEditBooking = useCallback((booking: Booking) => {
+    setSelectedBooking(booking);
     setSelectedBill(null);
     setCurrentView('editor');
   }, []);
+  
+  const handleAddNewBill = () => {
+      createModeRef.current = 'bill';
+      setSelectedBill(null);
+      setSelectedBooking(null);
+      setCurrentView('editor');
+  };
 
-  const handleSaveBill = useCallback((bill: Bill) => {
-    if (bill.id) {
-      updateBill(bill);
-    } else {
-      addBill(bill);
-    }
-    setCurrentView('list');
-    setSelectedBill(null);
-  }, [addBill, updateBill]);
+  const handleAddNewBooking = () => {
+      createModeRef.current = 'booking';
+      setSelectedBill(null);
+      setSelectedBooking(null);
+      setCurrentView('editor');
+  };
+
+  // Actual Save Handler
+  const onSaveItem = (item: Bill) => {
+      if (selectedBooking) {
+          updateBooking(item);
+      } else if (selectedBill) {
+          updateBill(item);
+      } else {
+           // Creating New
+           if (createModeRef.current === 'booking') {
+               addBooking(item);
+           } else {
+               addBill(item);
+           }
+      }
+      setCurrentView('list');
+      setSelectedBill(null);
+      setSelectedBooking(null);
+  };
 
   const handleCancel = useCallback(() => {
-    setCurrentView(bills.length > 0 ? 'list' : 'dashboard');
+    setCurrentView(bills.length > 0 || bookings.length > 0 ? 'list' : 'dashboard');
     setSelectedBill(null);
-  }, [bills.length]);
+    setSelectedBooking(null);
+  }, [bills.length, bookings.length]);
 
-  const handleViewRevenueHistory = useCallback(() => {
-    setCurrentView('revenue-calendar');
-  }, []);
+  const handleConvertToBill = (booking: Booking) => {
+      if (window.confirm(`Xác nhận chuyển lịch hẹn của "${booking.customerName}" thành hóa đơn?`)) {
+          const { id, ...billData } = booking;
+          addBill(billData); // Create new bill from booking
+          deleteBooking(booking.id);
+      }
+  };
 
-  const handleSelectDateFromCalendar = useCallback((date: string) => {
-    setTargetDate(date);
-    setCurrentView('list');
-  }, []);
+  // --- Notification Handlers ---
+  const confirmDueBooking = () => {
+      if (dueBooking) {
+          const { id, ...billData } = dueBooking;
+          addBill(billData);
+          deleteBooking(dueBooking.id);
+          setDueBooking(null);
+      }
+  };
 
-  const handleClearTargetDate = useCallback(() => {
-    setTargetDate(null);
-  }, []);
+  const keepDueBooking = () => {
+      setDueBooking(null);
+  };
+  
+  const [showDeleteConfirmForDue, setShowDeleteConfirmForDue] = useState(false);
+
+  const deleteDueBooking = () => {
+      if (dueBooking) {
+          deleteBooking(dueBooking.id);
+          setDueBooking(null);
+          setShowDeleteConfirmForDue(false);
+      }
+  };
+
 
   const renderView = () => {
     switch (currentView) {
       case 'dashboard':
-        return <Dashboard bills={bills} onViewRevenueHistory={handleViewRevenueHistory} />;
+        return <Dashboard bills={bills} onViewRevenueHistory={() => setCurrentView('revenue-calendar')} />;
       case 'editor':
-        return <BillEditor bill={selectedBill} onSave={handleSaveBill} onCancel={handleCancel} services={services} customerNames={customerNames} categories={categories} />;
+        return <BillEditor 
+            bill={selectedBill || selectedBooking} 
+            onSave={onSaveItem} 
+            onCancel={handleCancel} 
+            services={services} 
+            customerNames={customerNames} 
+            categories={categories}
+            isBooking={selectedBooking !== null || createModeRef.current === 'booking'}
+        />;
       case 'services':
         return <ServiceManager 
             services={services} 
@@ -241,17 +338,23 @@ const App: React.FC = () => {
       case 'customers':
         return <CustomerList bills={bills} />;
       case 'revenue-calendar':
-        return <RevenueCalendar bills={bills} onBack={() => setCurrentView('dashboard')} onSelectDate={handleSelectDateFromCalendar} />;
+        return <RevenueCalendar bills={bills} onBack={() => setCurrentView('dashboard')} onSelectDate={(date) => { setTargetDate(date); setCurrentView('list'); }} />;
       case 'list':
       default:
         return <BillList 
             bills={bills} 
             onEdit={handleEditBill} 
             onDelete={deleteBill} 
-            onAddNew={handleAddNewBill} 
+            onAddNew={handleAddNewBill}
             shopName={shopName} 
             initialDate={targetDate}
-            onClearTargetDate={handleClearTargetDate}
+            onClearTargetDate={() => setTargetDate(null)}
+            
+            bookings={bookings}
+            onEditBooking={handleEditBooking}
+            onDeleteBooking={deleteBooking}
+            onConvertToBill={handleConvertToBill}
+            onAddNewBooking={handleAddNewBooking}
         />;
     }
   };
@@ -348,6 +451,79 @@ const App: React.FC = () => {
              </div>
           </div>
         </div>
+      )}
+
+      {/* Booking Due Notification Popup */}
+      {dueBooking && !showDeleteConfirmForDue && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[110] p-4 animate-in fade-in duration-300">
+              <div className="bg-white p-6 rounded-3xl shadow-floating w-full max-w-sm border-2 border-primary/20 relative">
+                  <div className="absolute -top-10 left-1/2 transform -translate-x-1/2 w-20 h-20 bg-white rounded-full p-2 shadow-lg">
+                      <div className="w-full h-full bg-pink-100 rounded-full flex items-center justify-center animate-bounce-short">
+                          <BellIcon className="w-8 h-8 text-primary" />
+                      </div>
+                  </div>
+                  
+                  <div className="mt-8 text-center">
+                      <h3 className="text-xl font-bold text-text-main">Nhắc Hẹn</h3>
+                      <p className="text-gray-500 mt-2 text-sm">
+                          Lịch hẹn của <strong className="text-primary text-base">{dueBooking.customerName}</strong>
+                      </p>
+                      <p className="font-semibold text-text-main text-lg mt-1">
+                          {formatSpecificDateTime(dueBooking.date)}
+                      </p>
+                  </div>
+
+                  <div className="mt-8 flex flex-col gap-3">
+                      <button 
+                          onClick={confirmDueBooking}
+                          className="w-full py-3 bg-primary text-white rounded-2xl font-bold hover:bg-primary-hover shadow-lg shadow-primary/30 flex items-center justify-center gap-2"
+                      >
+                          <ArrowRightOnRectangleIcon className="w-5 h-5"/>
+                          Chuyển sang hóa đơn
+                      </button>
+                      <button 
+                          onClick={keepDueBooking}
+                          className="w-full py-3 bg-white border-2 border-gray-100 text-text-main rounded-2xl font-bold hover:bg-gray-50 flex items-center justify-center gap-2"
+                      >
+                          <CheckIcon className="w-5 h-5 text-gray-400"/>
+                          Giữ lịch hẹn
+                      </button>
+                      <button 
+                          onClick={() => setShowDeleteConfirmForDue(true)}
+                          className="w-full py-3 bg-white text-red-500 rounded-2xl font-bold hover:bg-red-50 flex items-center justify-center gap-2"
+                      >
+                          <TrashIcon className="w-5 h-5"/>
+                          Xóa lịch hẹn
+                      </button>
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {/* Delete Confirmation for Notification */}
+      {showDeleteConfirmForDue && (
+           <div className="fixed inset-0 bg-black/60 z-[120] flex items-center justify-center p-4">
+                <div className="bg-white w-full max-w-sm rounded-3xl shadow-floating p-6">
+                    <h3 className="text-xl font-bold text-text-main mb-2">Xác nhận xóa</h3>
+                    <p className="text-text-light mb-6">
+                        Bạn có chắc chắn muốn xóa lịch hẹn này không?
+                    </p>
+                    <div className="flex justify-end gap-3">
+                        <button 
+                            onClick={() => setShowDeleteConfirmForDue(false)} 
+                            className="px-5 py-2.5 bg-gray-100 text-text-main rounded-2xl font-bold hover:bg-gray-200 transition-colors"
+                        >
+                            Hủy
+                        </button>
+                        <button 
+                            onClick={deleteDueBooking} 
+                            className="px-5 py-2.5 bg-red-500 text-white rounded-2xl font-bold hover:bg-red-600 transition-colors shadow-lg shadow-red-500/30"
+                        >
+                            Xóa
+                        </button>
+                    </div>
+                </div>
+            </div>
       )}
 
       {/* Spacer to prevent content overlap with fixed header */}
