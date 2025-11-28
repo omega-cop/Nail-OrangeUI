@@ -38,49 +38,55 @@ const BillSkeleton = () => (
 );
 
 // New Component: Circular Progress Timer for Booking
-const BookingProgress: React.FC<{ targetDate: string }> = ({ targetDate }) => {
+const BookingProgress: React.FC<{ targetDate: string, createdAt?: string }> = ({ targetDate, createdAt }) => {
     const [percentage, setPercentage] = useState(0);
     const [color, setColor] = useState('text-blue-500');
 
     useEffect(() => {
         const updateProgress = () => {
             const now = new Date().getTime();
-            const target = new Date(targetDate).getTime();
-            const diffMs = target - now;
+            const end = new Date(targetDate).getTime();
             
-            // Assume "Full" wait time is 24 hours for visualization (86400000 ms)
-            // If more than 24h, it's 0% (just started waiting/far away)
-            // If 0h, it's 100% (urgent)
-            const maxWait = 24 * 60 * 60 * 1000;
+            // Determine Start Time
+            // If createdAt exists, use it. 
+            // If not (old data), assume a default window of 24h before due date to avoid errors, or just show 0 if overdue.
+            let start = createdAt ? new Date(createdAt).getTime() : end - (24 * 60 * 60 * 1000);
             
-            // Calculate reverse percentage: Closer to target = Higher percentage
+            // Safety check: If for some reason start > end (edited backwards), swap or clamp
+            if (start > end) start = end - (1 * 60 * 60 * 1000); // Fallback 1 hour
+
+            const totalDuration = end - start;
+            const elapsed = now - start;
+
+            // Calculate Percentage
             let percent = 0;
-            if (diffMs <= 0) {
-                percent = 100;
-            } else if (diffMs > maxWait) {
-                percent = 10; // Minimal indication for far future
+            if (totalDuration <= 0) {
+                percent = 100; // Should not happen ideally
             } else {
-                percent = Math.min(100, Math.max(0, ((maxWait - diffMs) / maxWait) * 100));
+                percent = (elapsed / totalDuration) * 100;
             }
 
+            // Clamp percent between 0 and 100
+            percent = Math.min(100, Math.max(0, percent));
             setPercentage(percent);
 
-            // Determine color based on time remaining
-            const hoursLeft = diffMs / (1000 * 60 * 60);
-            
-            if (hoursLeft > 12) {
-                setColor('text-blue-500'); // 0-50% visual range (Far)
-            } else if (hoursLeft > 4) {
-                setColor('text-orange-500'); // 51-80% visual range (Medium)
+            // Determine color based on Percentage
+            // 0-50%: Blue
+            // 51-80%: Orange
+            // 81-100%: Red
+            if (percent <= 50) {
+                setColor('text-blue-500');
+            } else if (percent <= 80) {
+                setColor('text-orange-500');
             } else {
-                setColor('text-red-500'); // 81-99% visual range (Close)
+                setColor('text-red-500');
             }
         };
 
         updateProgress();
         const interval = setInterval(updateProgress, 60000); // Update every minute
         return () => clearInterval(interval);
-    }, [targetDate]);
+    }, [targetDate, createdAt]);
 
     // SVG parameters
     const radius = 20;
@@ -463,9 +469,9 @@ const BillList: React.FC<BillListProps> = ({
                      groupedBookings[category].map(booking => (
                         <div key={booking.id} className="group bg-white p-4 rounded-3xl shadow-card hover:shadow-lg transition-all duration-300 border border-transparent hover:border-blue-200 relative overflow-hidden">
                              <div className="flex items-center gap-4">
-                                {/* Timer Progress Avatar */}
+                                {/* Timer Progress Avatar - Pass createdAt here */}
                                 <div className="shrink-0">
-                                    <BookingProgress targetDate={booking.date} />
+                                    <BookingProgress targetDate={booking.date} createdAt={booking.createdAt} />
                                 </div>
 
                                 {/* Info */}
