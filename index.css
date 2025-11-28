@@ -1,6 +1,6 @@
 /* Base styles */
 body {
-    background: linear-gradient(135deg, #FFF7ED 0%, #FFFFFF 50%, #FFEDD5 100%);
+    background: linear-gradient(135deg, #FFF5FF 0%, #FFFFFF 50%, #FFE5FF 100%);
     background-attachment: fixed;
     font-family: 'Noto Sans', sans-serif;
     color: #1F2937;
@@ -19,12 +19,12 @@ body {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-    background-color: rgba(249, 115, 22, 0.2); /* Orange tint */
+    background-color: rgba(242, 95, 210, 0.2); /* Pink tint */
     border-radius: 20px;
 }
 
 .custom-scrollbar:hover::-webkit-scrollbar-thumb {
-    background-color: rgba(249, 115, 22, 0.4);
+    background-color: rgba(242, 95, 210, 0.4);
 }
 
 /* Hide Scrollbar (for horizontal scrolling lists) */
@@ -69,6 +69,6 @@ input, select, textarea {
 .glass-card {
     background: rgba(255, 255, 255, 0.85);
     backdrop-filter: blur(12px);
-    box-shadow: 0 8px 32px 0 rgba(249, 115, 22, 0.05);
+    box-shadow: 0 8px 32px 0 rgba(242, 95, 210, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.6);
 }
