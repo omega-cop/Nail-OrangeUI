@@ -14,6 +14,8 @@ import RevenueCalendar from './components/RevenueCalendar';
 import { ListBulletIcon, TagIcon, HomeIcon, UsersIcon, CloudArrowDownIcon, CloudArrowUpIcon, Cog6ToothIcon, SwatchIcon, BellIcon, ArrowRightOnRectangleIcon, CheckIcon, TrashIcon } from './components/icons';
 import { formatSpecificDateTime } from './utils/dateUtils';
 
+const NOTIFIED_BOOKINGS_KEY = 'nailSpaNotifiedBookings';
+
 const App: React.FC = () => {
   const { bills, addBill, updateBill, deleteBill, restoreBills } = useBills();
   const { 
@@ -45,7 +47,22 @@ const App: React.FC = () => {
   // --- Notification / Booking Check Logic ---
   // Using a queue for multiple concurrent notifications
   const [dueBookingQueue, setDueBookingQueue] = useState<Booking[]>([]);
-  const [notifiedBookingIds, setNotifiedBookingIds] = useState<Set<string>>(new Set());
+  
+  // Persist notified IDs to localStorage so we don't spam users on reload, 
+  // but we CAN catch up on missed notifications.
+  const [notifiedBookingIds, setNotifiedBookingIds] = useState<Set<string>>(() => {
+      try {
+          const stored = localStorage.getItem(NOTIFIED_BOOKINGS_KEY);
+          return stored ? new Set(JSON.parse(stored)) : new Set();
+      } catch {
+          return new Set();
+      }
+  });
+
+  // Effect to save notified IDs
+  useEffect(() => {
+      localStorage.setItem(NOTIFIED_BOOKINGS_KEY, JSON.stringify([...notifiedBookingIds]));
+  }, [notifiedBookingIds]);
   
   // Snooze Logic
   const [isSnoozeMode, setIsSnoozeMode] = useState(false);
@@ -91,7 +108,7 @@ const App: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // --- Booking Timer Logic ---
+  // --- Booking Timer Logic (Catch-up Mechanism) ---
   useEffect(() => {
       const checkBookings = () => {
           const now = new Date();
@@ -99,27 +116,34 @@ const App: React.FC = () => {
           
           bookings.forEach(booking => {
               const bookingDate = new Date(booking.date);
-              // Check if time matches current minute AND hasn't been notified yet
-              if (
-                  bookingDate.getFullYear() === now.getFullYear() &&
-                  bookingDate.getMonth() === now.getMonth() &&
-                  bookingDate.getDate() === now.getDate() &&
-                  bookingDate.getHours() === now.getHours() &&
-                  bookingDate.getMinutes() === now.getMinutes() &&
-                  !notifiedBookingIds.has(booking.id)
-              ) {
+              
+              // CATCH-UP LOGIC:
+              // 1. Check if booking time is NOW or IN THE PAST (bookingDate <= now)
+              // 2. Check if we haven't notified yet (!notifiedBookingIds.has)
+              // 3. Optional: Only catch up within last 24 hours to avoid notifying ancient bookings
+              const isDue = bookingDate <= now;
+              const isRecent = bookingDate.getTime() > (now.getTime() - 24 * 60 * 60 * 1000); // Within last 24h
+
+              if (isDue && isRecent && !notifiedBookingIds.has(booking.id)) {
                    // Check if already in queue to avoid duplicates in state
                    setDueBookingQueue(prevQueue => {
                        if (prevQueue.some(b => b.id === booking.id)) return prevQueue;
                        return [...prevQueue, booking];
                    });
                    
-                   setNotifiedBookingIds(prev => new Set(prev).add(booking.id));
+                   setNotifiedBookingIds(prev => {
+                       const next = new Set(prev);
+                       next.add(booking.id);
+                       return next;
+                   });
               }
           });
       };
 
-      const intervalId = setInterval(checkBookings, 10000); // Check every 10 seconds
+      // Check immediately on mount (to handle "opening the app" scenario)
+      checkBookings();
+
+      const intervalId = setInterval(checkBookings, 5000); // Check every 5 seconds
       return () => clearInterval(intervalId);
   }, [bookings, notifiedBookingIds]);
 
@@ -344,9 +368,9 @@ const App: React.FC = () => {
           const updatedBooking = { ...currentDueBooking, date: newDate.toISOString() };
           
           updateBooking(updatedBooking);
-          // Note: updateBooking updates localStorage.
-          // Since it's rescheduled for later, we remove it from the current "Due" queue.
-          // We also need to remove it from `notifiedBookingIds` so it triggers again later.
+          // When snoozing, we update the booking time.
+          // CRITICAL: We must remove it from `notifiedBookingIds` so the "Catch-up" logic
+          // picks it up again when the new time arrives.
           setNotifiedBookingIds(prev => {
               const next = new Set(prev);
               next.delete(currentDueBooking.id);
