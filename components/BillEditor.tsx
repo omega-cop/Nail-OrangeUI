@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import type { Bill, ServiceItem, PredefinedService, ServiceCategory, Booking } from '../types';
-import { TrashIcon, ChevronDownIcon, ChevronUpIcon } from './icons';
+import type { Bill, ServiceItem, PredefinedService, ServiceCategory, Booking, Customer } from '../types';
+import { TrashIcon, ChevronDownIcon, ChevronUpIcon, CakeIcon } from './icons';
 import { getTodayDateString, formatCurrency, getCurrentTimeString } from '../utils/dateUtils';
 
 interface BillEditorProps {
@@ -11,10 +11,11 @@ interface BillEditorProps {
   services: PredefinedService[];
   categories?: ServiceCategory[];
   customerNames: string[];
+  customers?: Customer[];
   isBooking?: boolean;
 }
 
-const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, services, categories, customerNames, isBooking = false }) => {
+const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, services, categories, customerNames, customers = [], isBooking = false }) => {
   const [customerName, setCustomerName] = useState('');
   const [date, setDate] = useState(getTodayDateString());
   const [time, setTime] = useState(getCurrentTimeString());
@@ -22,6 +23,7 @@ const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, service
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isSuggestionsVisible, setIsSuggestionsVisible] = useState(false);
   const [note, setNote] = useState('');
+  const [birthdayAlert, setBirthdayAlert] = useState<string | null>(null);
   
   // Discount states
   const [discountValue, setDiscountValue] = useState<number>(0);
@@ -60,6 +62,35 @@ const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, service
       setIsCustomerInfoOpen(true);
     }
   }, [bill]);
+
+  // Birthday Check Effect
+  useEffect(() => {
+      if (!customerName || !customers.length) {
+          setBirthdayAlert(null);
+          return;
+      }
+
+      const normalizedInput = customerName.trim().toLowerCase();
+      // Find customer exactly (case-insensitive)
+      const customer = customers.find(c => c.name.trim().toLowerCase() === normalizedInput);
+
+      if (customer && customer.dob) {
+          try {
+              // Parse YYYY-MM-DD manually to avoid timezone shifts
+              const [year, month, day] = customer.dob.split('-').map(Number);
+              const today = new Date();
+              const currentMonth = today.getMonth() + 1; // getMonth is 0-indexed
+
+              if (month === currentMonth) {
+                  setBirthdayAlert(`Khách hàng có sinh nhật trong tháng này (${day}/${month}/${year})`);
+                  return;
+              }
+          } catch (e) {
+              // ignore invalid dates
+          }
+      }
+      setBirthdayAlert(null);
+  }, [customerName, customers]);
 
   const updateSuggestions = (value: string) => {
     if (value) {
@@ -207,16 +238,7 @@ const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, service
     // Validation for Booking: Cannot select past time
     if (isBooking) {
         const now = new Date();
-        // Allow a small buffer (e.g., 1 minute) or compare strictly
-        // Only validate if we are changing the time or creating new
-        // For simplicity, we warn if the target time is in past relative to NOW
         if (finalDate < now) {
-            // Check if it's just an edit of an existing booking where time wasn't changed
-            // If it's a new booking, definitely block
-            // If it's an edit, we might allow if they didn't touch the time? 
-            // Current req: "không cho chọn giờ ở quá khứ (tính từ thời điểm tạo lịch)" -> Applies to creation or rescheduling.
-            // If editing a past booking, maybe we should warn? 
-            // For now, let's keep the strict check but maybe a bit loose (1 min buffer)
             const diff = now.getTime() - finalDate.getTime();
             if (diff > 60000) { // 1 minute tolerance
                  alert("Thời gian đặt lịch không thể ở trong quá khứ!");
@@ -238,8 +260,6 @@ const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, service
       note: note.trim()
     };
 
-    // Preserve 'createdAt' if it exists on the original object (for Bookings)
-    // This is crucial for the BookingProgress bar logic.
     if (isBooking && bill && (bill as Booking).createdAt) {
         (billData as any).createdAt = (bill as Booking).createdAt;
     }
@@ -339,6 +359,14 @@ const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, service
                     className={inputBaseClasses}
                     placeholder="ví dụ: Nguyễn Thị A"
                 />
+                
+                {birthdayAlert && (
+                  <div className="mt-2 flex items-center gap-2 text-orange-500 bg-orange-50 px-3 py-2 rounded-xl text-sm font-medium animate-in fade-in slide-in-from-top-1 border border-orange-100">
+                      <CakeIcon className="w-5 h-5 shrink-0" />
+                      <span>{birthdayAlert}</span>
+                  </div>
+                )}
+
                 {isSuggestionsVisible && suggestions.length > 0 && (
                     <ul className="absolute z-20 w-full bg-white border border-gray-100 rounded-2xl shadow-lg max-h-48 overflow-y-auto mt-2 p-1">
                     {suggestions.map((name, index) => (
