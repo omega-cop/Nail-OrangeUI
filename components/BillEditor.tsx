@@ -21,6 +21,7 @@ const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, service
   const [items, setItems] = useState<ServiceItem[]>([]);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isSuggestionsVisible, setIsSuggestionsVisible] = useState(false);
+  const [note, setNote] = useState('');
   
   // Discount states
   const [discountValue, setDiscountValue] = useState<number>(0);
@@ -46,6 +47,7 @@ const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, service
 
       setDiscountValue(bill.discountValue || 0);
       setDiscountType(bill.discountType || 'amount');
+      setNote((bill as any).note || ''); // Cast to any to access optional note property safely
       setIsCustomerInfoOpen(false); 
     } else {
       setCustomerName('');
@@ -54,6 +56,7 @@ const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, service
       setItems([{ id: `temp-${Date.now()}`, serviceId: '', name: '', price: 0, quantity: 1 }]);
       setDiscountValue(0);
       setDiscountType('amount');
+      setNote('');
       setIsCustomerInfoOpen(true);
     }
   }, [bill]);
@@ -192,6 +195,16 @@ const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, service
     const finalDate = new Date(date);
     finalDate.setHours(hours, minutes, 0, 0);
 
+    // Validation for Booking: Cannot select past time
+    if (isBooking) {
+        const now = new Date();
+        // Allow a small buffer (e.g., 1 minute) or compare strictly
+        if (finalDate < now) {
+            alert("Thời gian đặt lịch không thể ở trong quá khứ! Vui lòng chọn thời gian từ hiện tại trở đi.");
+            return;
+        }
+    }
+
     const finalTotal = calculateTotal();
 
     const newBill: Bill = {
@@ -201,8 +214,9 @@ const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, service
       items: finalItems,
       total: finalTotal,
       discountValue: discountValue,
-      discountType: discountType
-    };
+      discountType: discountType,
+      note: note.trim()
+    } as Bill;
     onSave(newBill);
   };
 
@@ -338,6 +352,16 @@ const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, service
                         className={`${inputBaseClasses} [color-scheme:light] cursor-pointer`}
                     />
                     </div>
+                </div>
+                <div>
+                    <label htmlFor="note" className="block text-sm font-medium text-text-main mb-1 pl-1">Ghi chú</label>
+                    <textarea
+                        id="note"
+                        value={note}
+                        onChange={(e) => setNote(e.target.value)}
+                        className={`${inputBaseClasses} min-h-[80px] resize-y`}
+                        placeholder="Ghi chú thêm về khách hàng hoặc dịch vụ..."
+                    />
                 </div>
             </div>
           )}
