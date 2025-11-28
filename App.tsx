@@ -16,7 +16,7 @@ const App: React.FC = () => {
   const { bills, addBill, updateBill, deleteBill, restoreBills } = useBills();
   const { 
       services, addService, updateService, deleteService, restoreServices,
-      categories, addCategory, updateCategory, deleteCategory, restoreCategories
+      categories, addCategory, updateCategory, deleteCategory, restoreCategories, reorderCategories
   } = useServices();
   const { shopName, updateShopName, billTheme, updateBillTheme } = useShopSettings();
   
@@ -237,6 +237,7 @@ const App: React.FC = () => {
             addCategory={addCategory}
             updateCategory={updateCategory}
             deleteCategory={deleteCategory}
+            reorderCategories={reorderCategories}
         />;
       case 'customers':
         return <CustomerList bills={bills} />;
