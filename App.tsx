@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import type { Bill, View } from './types';
 import useBills from './hooks/useBills';
@@ -165,11 +164,11 @@ const App: React.FC = () => {
 
   // Themes Data
   const themes = [
-    { id: 'default', name: 'Mặc định', color: 'bg-gray-100 border-gray-300' },
-    { id: 'pink', name: 'Dễ thương', color: 'bg-pink-100 border-pink-300' },
+    { id: 'default', name: 'Mặc định (Hồng)', color: 'bg-pink-100 border-pink-300' },
     { id: 'blue', name: 'Chuyên nghiệp', color: 'bg-blue-100 border-blue-300' },
     { id: 'gold', name: 'Sang trọng', color: 'bg-stone-800 border-yellow-500' },
     { id: 'green', name: 'Tươi mới', color: 'bg-emerald-100 border-emerald-300' },
+    { id: 'orange', name: 'Năng động', color: 'bg-orange-100 border-orange-300' },
   ];
 
   const handleSelectTheme = (themeId: string) => {
@@ -264,7 +263,7 @@ const App: React.FC = () => {
         currentView === view ? 'text-primary' : 'text-gray-400 hover:text-primary/70'
       }`}
     >
-      <div className={`p-2 rounded-2xl transition-all duration-300 ${currentView === view ? 'bg-orange-50 -translate-y-2 shadow-sm' : ''}`}>
+      <div className={`p-2 rounded-2xl transition-all duration-300 ${currentView === view ? 'bg-pink-50 -translate-y-2 shadow-sm' : ''}`}>
         {icon}
       </div>
       <span className={`text-[10px] font-medium transition-all ${currentView === view ? 'opacity-100 font-bold translate-y-[-4px]' : 'opacity-0 h-0 overflow-hidden'}`}>{label}</span>
@@ -329,7 +328,7 @@ const App: React.FC = () => {
                    key={theme.id}
                    onClick={() => handleSelectTheme(theme.id)}
                    className={`flex items-center p-3 rounded-2xl border-2 transition-all ${
-                     billTheme === theme.id ? 'border-primary bg-orange-50' : 'border-transparent hover:bg-gray-50'
+                     billTheme === theme.id ? 'border-primary bg-pink-50' : 'border-transparent hover:bg-gray-50'
                    }`}
                  >
                    <div className={`w-8 h-8 rounded-full border ${theme.color} mr-3 shadow-sm`}></div>
@@ -368,7 +367,7 @@ const App: React.FC = () => {
               <div ref={settingsMenuRef} className="relative">
                 <button 
                   onClick={() => setIsSettingsMenuOpen(prev => !prev)}
-                  className="p-2.5 rounded-full text-text-light hover:text-primary hover:bg-orange-50 transition-all"
+                  className="p-2.5 rounded-full text-text-light hover:text-primary hover:bg-pink-50 transition-all"
                   aria-label="Cài đặt"
                   title="Cài đặt"
                 >
