@@ -37,10 +37,11 @@ export interface Bill {
   total: number;
   discountValue?: number; // Giá trị giảm giá
   discountType?: 'percent' | 'amount'; // Loại giảm giá: % hoặc số tiền cố định
+  note?: string;
 }
 
 export interface Booking extends Bill {
-  note?: string;
+  createdAt?: string; // Thời gian tạo lịch, dùng để tính tiến độ
 }
 
 export type View = 'list' | 'editor' | 'dashboard' | 'services' | 'customers' | 'revenue-calendar';
