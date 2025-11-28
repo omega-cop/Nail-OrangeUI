@@ -1,7 +1,7 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { PredefinedService, ServiceCategory, PriceVariant } from '../types';
-import { PencilIcon, TrashIcon, PlusIcon } from './icons';
+import { PencilIcon, TrashIcon, PlusIcon, Bars2Icon } from './icons';
 import { formatCurrency } from '../utils/dateUtils';
 
 interface ServiceManagerProps {
@@ -13,16 +13,24 @@ interface ServiceManagerProps {
   addCategory: (name: string) => void;
   updateCategory: (category: ServiceCategory) => void;
   deleteCategory: (id: string) => void;
+  reorderCategories?: (categories: ServiceCategory[]) => void;
 }
 
 type Tab = 'services' | 'categories';
 
 const ServiceManager: React.FC<ServiceManagerProps> = ({ 
     services, addService, updateService, deleteService,
-    categories, addCategory, updateCategory, deleteCategory
+    categories, addCategory, updateCategory, deleteCategory, reorderCategories
 }) => {
   const [activeTab, setActiveTab] = useState<Tab>('services');
   const [filterCategory, setFilterCategory] = useState<string>('all');
+  
+  // Local state for Drag and Drop to prevent jittering
+  const [localCategories, setLocalCategories] = useState<ServiceCategory[]>(categories);
+
+  useEffect(() => {
+    setLocalCategories(categories);
+  }, [categories]);
   
   // --- Modal States ---
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
@@ -33,6 +41,10 @@ const ServiceManager: React.FC<ServiceManagerProps> = ({
 
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [deleteType, setDeleteType] = useState<'service' | 'category' | null>(null);
+
+  // --- DnD State ---
+  const dragItem = useRef<number | null>(null);
+  const dragOverItem = useRef<number | null>(null);
 
   // --- Form States ---
   // Service Form
@@ -58,7 +70,7 @@ const ServiceManager: React.FC<ServiceManagerProps> = ({
       setSPriceType('fixed');
       setSVariants([]);
       setSAllowQuantity(false);
-      setSCategoryId(categories[0]?.id || ''); // Default to first category
+      setSCategoryId(localCategories[0]?.id || ''); // Default to first category
       setIsServiceModalOpen(true);
   };
 
@@ -161,24 +173,65 @@ const ServiceManager: React.FC<ServiceManagerProps> = ({
       setDeleteType(null);
   };
 
+  // --- DnD Handlers ---
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement | HTMLTableRowElement>, position: number) => {
+      dragItem.current = position;
+      // Necessary for Firefox
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/html', e.currentTarget.innerHTML);
+      // Optional: Add visual effect for dragging
+      if (e.currentTarget.classList) {
+          e.currentTarget.classList.add('opacity-50');
+      }
+  };
+
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement | HTMLTableRowElement>, position: number) => {
+      e.preventDefault();
+      dragOverItem.current = position;
+      
+      // Perform live reorder visualization locally
+      if (dragItem.current !== null && dragItem.current !== position) {
+          const _categories = [...localCategories];
+          const draggedItemContent = _categories[dragItem.current];
+          _categories.splice(dragItem.current, 1);
+          _categories.splice(position, 0, draggedItemContent);
+          
+          dragItem.current = position; // Update drag index to new position
+          setLocalCategories(_categories); // Update local state immediately
+      }
+  };
+
+  const handleDragEnd = (e: React.DragEvent<HTMLDivElement | HTMLTableRowElement>) => {
+      // Reset visual opacity
+      if (e.currentTarget.classList) {
+          e.currentTarget.classList.remove('opacity-50');
+      }
+      
+      // Commit changes to parent
+      if (reorderCategories) {
+          reorderCategories(localCategories);
+      }
+      
+      dragItem.current = null;
+      dragOverItem.current = null;
+  };
+
   // Sort and Filter Data
-  const sortedCategories = [...categories].sort((a, b) => a.name.localeCompare(b.name));
-  
   const filteredServices = useMemo(() => {
     let list = [...services];
     
     // Filter
     if (filterCategory !== 'all') {
         if (filterCategory === 'uncategorized') {
-             list = list.filter(s => !s.categoryId || !categories.find(c => c.id === s.categoryId));
+             list = list.filter(s => !s.categoryId || !localCategories.find(c => c.id === s.categoryId));
         } else {
              list = list.filter(s => s.categoryId === filterCategory);
         }
     }
     
-    // Sort by name
+    // Sort by name (keep services sorted by name)
     return list.sort((a, b) => a.name.localeCompare(b.name));
-  }, [services, filterCategory, categories]);
+  }, [services, filterCategory, localCategories]);
 
   return (
     <div className="pb-10">
@@ -225,7 +278,8 @@ const ServiceManager: React.FC<ServiceManagerProps> = ({
                 >
                     Tất cả
                 </button>
-                {sortedCategories.map(cat => (
+                {/* Use localCategories to respect drag order */}
+                {localCategories.map(cat => (
                     <button 
                         key={cat.id} 
                         onClick={() => setFilterCategory(cat.id)}
@@ -247,7 +301,7 @@ const ServiceManager: React.FC<ServiceManagerProps> = ({
                 {/* Mobile View */}
                 <div className="md:hidden divide-y divide-secondary">
                     {filteredServices.length > 0 ? filteredServices.map(service => {
-                        const catName = categories.find(c => c.id === service.categoryId)?.name || 'Khác';
+                        const catName = localCategories.find(c => c.id === service.categoryId)?.name || 'Khác';
                         const displayPrice = service.priceType === 'variable' 
                             ? `${service.variants?.length || 0} mức giá`
                             : formatCurrency(service.price);
@@ -292,7 +346,7 @@ const ServiceManager: React.FC<ServiceManagerProps> = ({
                         </thead>
                         <tbody className="divide-y divide-secondary">
                         {filteredServices.length > 0 ? filteredServices.map(service => {
-                            const catName = categories.find(c => c.id === service.categoryId)?.name || 'Khác';
+                            const catName = localCategories.find(c => c.id === service.categoryId)?.name || 'Khác';
                             const displayPrice = service.priceType === 'variable' 
                                 ? `${service.variants?.length || 0} mức giá`
                                 : formatCurrency(service.price);
@@ -329,14 +383,27 @@ const ServiceManager: React.FC<ServiceManagerProps> = ({
         </div>
       )}
       
-      {/* --- CATEGORIES TAB CONTENT (Newly Added) --- */}
+      {/* --- CATEGORIES TAB CONTENT (With DnD) --- */}
       {activeTab === 'categories' && (
         <div className="bg-surface rounded-lg shadow-sm overflow-hidden">
              {/* Mobile View */}
              <div className="md:hidden divide-y divide-secondary">
-                {sortedCategories.length > 0 ? sortedCategories.map(category => (
-                    <div key={category.id} className="p-4 flex justify-between items-center">
-                        <div className="font-medium text-text-main">{category.name}</div>
+                {localCategories.length > 0 ? localCategories.map((category, index) => (
+                    <div 
+                        key={category.id} 
+                        className="p-4 flex justify-between items-center transition-all bg-surface"
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, index)}
+                        onDragEnter={(e) => handleDragEnter(e, index)}
+                        onDragEnd={handleDragEnd}
+                        onDragOver={(e) => e.preventDefault()}
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="cursor-move text-gray-400">
+                                <Bars2Icon className="w-5 h-5" />
+                            </div>
+                            <div className="font-medium text-text-main">{category.name}</div>
+                        </div>
                         <div className="flex items-center space-x-1 shrink-0">
                             <button onClick={() => openEditCategory(category)} className="p-2 text-text-light hover:text-primary transition-colors rounded-full hover:bg-secondary">
                                 <PencilIcon className="w-5 h-5" />
@@ -356,14 +423,26 @@ const ServiceManager: React.FC<ServiceManagerProps> = ({
                 <table className="w-full text-left">
                     <thead className="bg-secondary">
                         <tr className="border-b border-secondary/20">
+                            <th className="p-4 font-semibold text-text-main text-sm w-10"></th>
                             <th className="p-4 font-semibold text-text-main text-sm w-full">Tên Loại Dịch Vụ</th>
                             <th className="p-4 font-semibold text-text-main text-sm text-center w-32">Hành Động</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-secondary">
-                        {sortedCategories.length > 0 ? sortedCategories.map(category => (
-                            <tr key={category.id} className="hover:bg-secondary/30">
-                                <td className="p-4 text-text-main">{category.name}</td>
+                        {localCategories.length > 0 ? localCategories.map((category, index) => (
+                            <tr 
+                                key={category.id} 
+                                className="hover:bg-secondary/30 transition-all cursor-move bg-surface"
+                                draggable
+                                onDragStart={(e) => handleDragStart(e, index)}
+                                onDragEnter={(e) => handleDragEnter(e, index)}
+                                onDragEnd={handleDragEnd}
+                                onDragOver={(e) => e.preventDefault()}
+                            >
+                                <td className="p-4 text-center text-gray-400">
+                                     <Bars2Icon className="w-5 h-5 mx-auto" />
+                                </td>
+                                <td className="p-4 text-text-main font-medium">{category.name}</td>
                                 <td className="p-4">
                                     <div className="flex justify-center space-x-2">
                                         <button onClick={() => openEditCategory(category)} className="p-2 text-text-light hover:text-primary transition-colors rounded-full hover:bg-secondary">
@@ -377,7 +456,7 @@ const ServiceManager: React.FC<ServiceManagerProps> = ({
                             </tr>
                         )) : (
                             <tr>
-                                <td colSpan={2} className="p-8 text-center text-text-light">Chưa có loại dịch vụ nào.</td>
+                                <td colSpan={3} className="p-8 text-center text-text-light">Chưa có loại dịch vụ nào.</td>
                             </tr>
                         )}
                     </tbody>
@@ -406,7 +485,7 @@ const ServiceManager: React.FC<ServiceManagerProps> = ({
                         <label className="block text-sm font-medium text-text-main mb-1">Loại Dịch Vụ</label>
                         <select value={sCategoryId} onChange={e => setSCategoryId(e.target.value)} className="w-full px-3 py-2 bg-secondary rounded-lg focus:ring-2 focus:ring-primary/50 outline-none text-text-main">
                             <option value="">-- Chọn loại --</option>
-                            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            {localCategories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
                     </div>
 
