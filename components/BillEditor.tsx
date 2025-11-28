@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Bill, ServiceItem, PredefinedService, ServiceCategory } from '../types';
 import { TrashIcon, ChevronDownIcon, ChevronUpIcon } from './icons';
@@ -10,9 +11,10 @@ interface BillEditorProps {
   services: PredefinedService[];
   categories?: ServiceCategory[];
   customerNames: string[];
+  isBooking?: boolean;
 }
 
-const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, services, categories, customerNames }) => {
+const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, services, categories, customerNames, isBooking = false }) => {
   const [customerName, setCustomerName] = useState('');
   const [date, setDate] = useState(getTodayDateString());
   const [time, setTime] = useState(getCurrentTimeString());
@@ -263,7 +265,12 @@ const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, service
 
   return (
     <form onSubmit={handleSubmit} className="max-w-2xl mx-auto bg-white p-6 sm:p-8 rounded-3xl shadow-card space-y-6">
-      <h2 className="text-2xl font-bold text-center text-text-main">{bill ? 'Chỉnh Sửa Hóa Đơn' : 'Tạo Hóa Đơn Mới'}</h2>
+      <h2 className="text-2xl font-bold text-center text-text-main">
+          {isBooking 
+            ? (bill ? 'Chỉnh Sửa Lịch Hẹn' : 'Tạo Lịch Hẹn Mới') 
+            : (bill ? 'Chỉnh Sửa Hóa Đơn' : 'Tạo Hóa Đơn Mới')
+          }
+      </h2>
       
       {/* Customer Info Section - Collapsible */}
       <div className="border border-gray-100 rounded-2xl overflow-hidden shadow-sm">
@@ -315,7 +322,7 @@ const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, service
                         onChange={(e) => setDate(e.target.value)}
                         onClick={(e) => (e.currentTarget as any).showPicker?.()}
                         required
-                        max={getTodayDateString()}
+                        min={isBooking ? getTodayDateString() : undefined}
                         className={`${inputBaseClasses} [color-scheme:light] cursor-pointer`}
                     />
                     </div>
@@ -493,7 +500,9 @@ const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, service
 
       <div className="flex justify-end space-x-3 sm:space-x-4 pt-4">
         <button type="button" onClick={onCancel} className="flex-1 sm:flex-none px-6 py-3 bg-gray-100 text-text-main rounded-2xl hover:bg-gray-200 transition-colors font-bold">Hủy</button>
-        <button type="submit" className="flex-1 sm:flex-none px-8 py-3 bg-primary text-white rounded-2xl hover:bg-primary-hover transition-colors shadow-lg shadow-primary/30 font-bold">Lưu Hóa Đơn</button>
+        <button type="submit" className="flex-1 sm:flex-none px-8 py-3 bg-primary text-white rounded-2xl hover:bg-primary-hover transition-colors shadow-lg shadow-primary/30 font-bold">
+            {isBooking ? 'Lưu Lịch Hẹn' : 'Lưu Hóa Đơn'}
+        </button>
       </div>
     </form>
   );
