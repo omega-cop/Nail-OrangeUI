@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import type { Bill, ServiceItem, PredefinedService, ServiceCategory } from '../types';
+import type { Bill, ServiceItem, PredefinedService, ServiceCategory, Booking } from '../types';
 import { TrashIcon, ChevronDownIcon, ChevronUpIcon } from './icons';
 import { getTodayDateString, formatCurrency, getCurrentTimeString } from '../utils/dateUtils';
 
@@ -199,15 +199,26 @@ const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, service
     if (isBooking) {
         const now = new Date();
         // Allow a small buffer (e.g., 1 minute) or compare strictly
+        // Only validate if we are changing the time or creating new
+        // For simplicity, we warn if the target time is in past relative to NOW
         if (finalDate < now) {
-            alert("Thời gian đặt lịch không thể ở trong quá khứ! Vui lòng chọn thời gian từ hiện tại trở đi.");
-            return;
+            // Check if it's just an edit of an existing booking where time wasn't changed
+            // If it's a new booking, definitely block
+            // If it's an edit, we might allow if they didn't touch the time? 
+            // Current req: "không cho chọn giờ ở quá khứ (tính từ thời điểm tạo lịch)" -> Applies to creation or rescheduling.
+            // If editing a past booking, maybe we should warn? 
+            // For now, let's keep the strict check but maybe a bit loose (1 min buffer)
+            const diff = now.getTime() - finalDate.getTime();
+            if (diff > 60000) { // 1 minute tolerance
+                 alert("Thời gian đặt lịch không thể ở trong quá khứ!");
+                 return;
+            }
         }
     }
 
     const finalTotal = calculateTotal();
 
-    const newBill: Bill = {
+    const billData = {
       id: bill?.id || '',
       customerName: customerName.trim(),
       date: finalDate.toISOString(),
@@ -216,8 +227,15 @@ const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, service
       discountValue: discountValue,
       discountType: discountType,
       note: note.trim()
-    } as Bill;
-    onSave(newBill);
+    };
+
+    // Preserve 'createdAt' if it exists on the original object (for Bookings)
+    // This is crucial for the BookingProgress bar logic.
+    if (isBooking && bill && (bill as Booking).createdAt) {
+        (billData as any).createdAt = (bill as Booking).createdAt;
+    }
+
+    onSave(billData as Bill);
   };
 
   const handleBlur = () => {
