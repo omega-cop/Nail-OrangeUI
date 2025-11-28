@@ -126,15 +126,16 @@ const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, service
       }
   };
 
-  const handleQuantityChange = (index: number, newQuantity: number) => {
-    if (newQuantity < 1) return;
+  const handleQuantityChange = (index: number, value: string) => {
+    // Allow empty string to represent 0 temporarily for UX
+    const newQuantity = value === '' ? 0 : parseInt(value);
     
     const newItems = [...items];
     const item = { ...newItems[index] };
     const service = services.find(s => s.id === item.serviceId);
     
     if (service) {
-        item.quantity = newQuantity;
+        item.quantity = isNaN(newQuantity) ? 0 : newQuantity;
         
         let unitPrice = service.price;
         if (service.priceType === 'variable' && service.variants) {
@@ -142,11 +143,19 @@ const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, service
             if (variant) unitPrice = variant.price;
         }
 
-        item.price = unitPrice * newQuantity;
+        item.price = unitPrice * item.quantity;
         newItems[index] = item;
         setItems(newItems);
     }
   };
+
+  const handleQuantityBlur = (index: number) => {
+    const item = items[index];
+    if (!item.quantity || item.quantity < 1) {
+        // Reset to 1 if empty or 0 on blur
+        handleQuantityChange(index, "1");
+    }
+  }
 
   const addItem = () => {
     setItems([...items, { id: `temp-${Date.now()}`, serviceId: '', name: '', price: 0, quantity: 1 }]);
@@ -433,8 +442,9 @@ const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, service
                                 <input
                                     type="number"
                                     min="1"
-                                    value={item.quantity || 1}
-                                    onChange={(e) => handleQuantityChange(index, parseInt(e.target.value) || 1)}
+                                    value={item.quantity === 0 ? '' : item.quantity}
+                                    onChange={(e) => handleQuantityChange(index, e.target.value)}
+                                    onBlur={() => handleQuantityBlur(index)}
                                     className="w-full py-2 border-none bg-transparent text-center text-text-main outline-none"
                                 />
                             </div>
@@ -478,8 +488,9 @@ const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, service
                             <input
                                 type="number"
                                 min="1"
-                                value={item.quantity || 1}
-                                onChange={(e) => handleQuantityChange(index, parseInt(e.target.value) || 1)}
+                                value={item.quantity === 0 ? '' : item.quantity}
+                                onChange={(e) => handleQuantityChange(index, e.target.value)}
+                                onBlur={() => handleQuantityBlur(index)}
                                 className="w-full py-1 border-none bg-transparent text-center text-text-main outline-none"
                             />
                         </div>
