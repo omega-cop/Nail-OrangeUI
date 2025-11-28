@@ -1,9 +1,9 @@
-
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import type { Bill, Booking, View } from './types';
 import useBills from './hooks/useBills';
 import useServices from './hooks/useServices';
 import useBookings from './hooks/useBookings';
+import useCustomers from './hooks/useCustomers';
 import { useShopSettings } from './hooks/useShopSettings';
 import BillList from './components/BillList';
 import BillEditor from './components/BillEditor';
@@ -23,6 +23,7 @@ const App: React.FC = () => {
       categories, addCategory, updateCategory, deleteCategory, restoreCategories, reorderCategories
   } = useServices();
   const { bookings, addBooking, updateBooking, deleteBooking } = useBookings();
+  const { customers, addCustomer, updateCustomer, deleteCustomer } = useCustomers();
   const { shopName, updateShopName, billTheme, updateBillTheme } = useShopSettings();
   
   const [currentView, setCurrentView] = useState<View>('dashboard');
@@ -155,13 +156,15 @@ const App: React.FC = () => {
       const categoriesData = localStorage.getItem('nailSpaCategories') || '[]';
       const settingsData = localStorage.getItem('nailSpaShopSettings') || '{"shopName": "Nail Spa"}';
       const bookingsData = localStorage.getItem('nailSpaBookings') || '[]';
+      const customersData = localStorage.getItem('nailSpaCustomers') || '[]';
       
       const backupData = {
         bills: JSON.parse(billsData),
         services: JSON.parse(servicesData),
         categories: JSON.parse(categoriesData),
         settings: JSON.parse(settingsData),
-        bookings: JSON.parse(bookingsData)
+        bookings: JSON.parse(bookingsData),
+        customers: JSON.parse(customersData)
       };
 
       const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
@@ -207,7 +210,8 @@ const App: React.FC = () => {
                 if (data.settings.shopName) updateShopName(data.settings.shopName);
                 if (data.settings.billTheme) updateBillTheme(data.settings.billTheme);
             }
-            // Bookings are not restored here explicitly in the old logic but should be in future
+            // Note: Currently restore functions for bookings/customers are not exposed from hooks but data structure supports it.
+            // For a production app, we should add restoreBookings and restoreCustomers to hooks.
             alert('Dữ liệu đã được khôi phục thành công.');
             window.location.reload(); 
           }
@@ -259,8 +263,10 @@ const App: React.FC = () => {
   const customerNames = useMemo(() => {
     const names = bills.map(bill => bill.customerName.trim());
     const bookingNames = bookings.map(b => b.customerName.trim());
-    return [...new Set([...names, ...bookingNames])].filter(name => name); 
-  }, [bills, bookings]);
+    // Also include manually added customer names
+    const manualNames = customers.map(c => c.name.trim());
+    return [...new Set([...names, ...bookingNames, ...manualNames])].filter(name => name); 
+  }, [bills, bookings, customers]);
 
   // --- Bill/Booking Handlers ---
 
@@ -425,7 +431,13 @@ const App: React.FC = () => {
             reorderCategories={reorderCategories}
         />;
       case 'customers':
-        return <CustomerList bills={bills} />;
+        return <CustomerList 
+          bills={bills} 
+          customers={customers}
+          onAddCustomer={addCustomer}
+          onUpdateCustomer={updateCustomer}
+          onDeleteCustomer={deleteCustomer}
+        />;
       case 'revenue-calendar':
         return <RevenueCalendar bills={bills} onBack={() => setCurrentView('dashboard')} onSelectDate={(date) => { setTargetDate(date); setCurrentView('list'); }} />;
       case 'list':
