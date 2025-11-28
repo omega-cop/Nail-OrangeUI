@@ -1,4 +1,3 @@
-
 import React, { useRef, useState } from 'react';
 import type { Bill } from '../types';
 import { formatCurrency, formatSpecificDateTime } from '../utils/dateUtils';
@@ -24,14 +23,14 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, onClose, shopName, 
   // Structure is constant (Receipt Card), colors change
   const getThemeStyles = (theme: string) => {
     switch (theme) {
-      case 'pink':
+      case 'orange':
         return {
-          iconGradient: 'from-pink-400 to-pink-600',
-          iconShadow: 'shadow-pink-200',
+          iconGradient: 'from-orange-400 to-orange-600',
+          iconShadow: 'shadow-orange-200',
           titleColor: 'text-gray-800',
-          primaryColor: 'text-pink-600',
-          accentBg: 'bg-pink-50',
-          topBar: 'bg-pink-500'
+          primaryColor: 'text-orange-600',
+          accentBg: 'bg-orange-50',
+          topBar: 'bg-orange-500'
         };
       case 'blue':
         return {
@@ -60,14 +59,14 @@ const BillViewModal: React.FC<BillViewModalProps> = ({ bill, onClose, shopName, 
             accentBg: 'bg-emerald-50',
             topBar: 'bg-emerald-500'
         };
-      default: // Orange (Standard Spa Theme)
+      default: // Pink (Default Spa Theme)
         return {
-          iconGradient: 'from-orange-400 to-orange-600',
-          iconShadow: 'shadow-orange-200',
+          iconGradient: 'from-pink-400 to-pink-600',
+          iconShadow: 'shadow-pink-200',
           titleColor: 'text-gray-800',
-          primaryColor: 'text-orange-600',
-          accentBg: 'bg-orange-50',
-          topBar: 'bg-orange-500'
+          primaryColor: 'text-pink-600',
+          accentBg: 'bg-pink-50',
+          topBar: 'bg-pink-500'
         };
     }
   };
