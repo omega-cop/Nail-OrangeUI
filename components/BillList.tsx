@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import type { Bill } from '../types';
 import { PencilIcon, TrashIcon, PlusIcon, MagnifyingGlassIcon, CalendarDaysIcon, XMarkIcon, ArrowUpIcon, BillIcon } from './icons';
@@ -232,10 +231,10 @@ const BillList: React.FC<BillListProps> = ({ bills, onEdit, onDelete, onAddNew, 
               <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3 px-2">{category}</h3>
               <div className="grid grid-cols-1 gap-3">
                 {groupedBills[category].map(bill => (
-                  <div key={bill.id} onClick={() => setViewingBill(bill)} className="group bg-white p-4 rounded-3xl shadow-card hover:shadow-lg transition-all duration-300 cursor-pointer border border-transparent hover:border-orange-100 relative overflow-hidden">
+                  <div key={bill.id} onClick={() => setViewingBill(bill)} className="group bg-white p-4 rounded-3xl shadow-card hover:shadow-lg transition-all duration-300 cursor-pointer border border-transparent hover:border-pink-200 relative overflow-hidden">
                     <div className="flex items-center gap-4">
                         {/* Icon Avatar */}
-                        <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-sm bg-orange-100 text-primary">
+                        <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-sm bg-pink-100 text-primary">
                             <BillIcon className="w-6 h-6" />
                         </div>
 
@@ -312,7 +311,7 @@ const BillList: React.FC<BillListProps> = ({ bills, onEdit, onDelete, onAddNew, 
       {showScrollTop && (
         <button
           onClick={scrollToTop}
-          className="fixed bottom-28 right-6 z-40 bg-white text-primary p-3 rounded-full shadow-floating hover:bg-gray-50 transition-all duration-300 animate-bounce-short border border-orange-100"
+          className="fixed bottom-28 right-6 z-40 bg-white text-primary p-3 rounded-full shadow-floating hover:bg-gray-50 transition-all duration-300 animate-bounce-short border border-pink-100"
           aria-label="Lên đầu trang"
         >
           <ArrowUpIcon className="w-6 h-6" />
