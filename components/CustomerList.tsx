@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState } from 'react';
 import type { Bill } from '../types';
 import { formatCurrency, formatDateTime } from '../utils/dateUtils';
@@ -73,7 +72,7 @@ const CustomerList: React.FC<CustomerListProps> = ({ bills }) => {
                         <button 
                             key={stat.name} 
                             onClick={() => setSelectedCustomer(stat)}
-                            className="w-full text-left bg-white p-4 rounded-3xl shadow-card hover:shadow-lg transition-all duration-300 flex items-center space-x-4 border border-transparent hover:border-orange-100 group"
+                            className="w-full text-left bg-white p-4 rounded-3xl shadow-card hover:shadow-lg transition-all duration-300 flex items-center space-x-4 border border-transparent hover:border-pink-200 group"
                         >
                              <div className="w-12 h-12 flex items-center justify-center shrink-0 relative">
                                 {index === 0 ? <GoldMedalIcon className="w-12 h-12 drop-shadow-sm" /> :
@@ -88,7 +87,7 @@ const CustomerList: React.FC<CustomerListProps> = ({ bills }) => {
                             <div className="flex-grow min-w-0">
                                 <h3 className="text-lg font-bold text-text-main truncate">{stat.name}</h3>
                                 <div className="flex items-center gap-3 mt-1">
-                                    <span className="text-xs bg-orange-50 text-orange-600 px-2 py-0.5 rounded-md font-medium">
+                                    <span className="text-xs bg-pink-50 text-primary px-2 py-0.5 rounded-md font-medium">
                                         {stat.visitCount} lần
                                     </span>
                                     <span className="text-xs text-gray-400 truncate">
