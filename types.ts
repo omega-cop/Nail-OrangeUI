@@ -39,4 +39,8 @@ export interface Bill {
   discountType?: 'percent' | 'amount'; // Loại giảm giá: % hoặc số tiền cố định
 }
 
+export interface Booking extends Bill {
+  note?: string;
+}
+
 export type View = 'list' | 'editor' | 'dashboard' | 'services' | 'customers' | 'revenue-calendar';
