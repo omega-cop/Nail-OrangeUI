@@ -22,6 +22,7 @@ interface BillListProps {
   onConvertToBill?: (booking: Booking) => void;
   onAddNewBooking?: () => void; // New prop for adding booking
   initialTab?: 'bills' | 'bookings'; // Control which tab is open by default
+  onTabChange?: (tab: 'bills' | 'bookings') => void; // Notify parent of tab change
 }
 
 const PAGE_SIZE = 20;
@@ -139,7 +140,7 @@ const formatBookingDateTime = (isoString: string): string => {
 
 const BillList: React.FC<BillListProps> = ({ 
     bills, onEdit, onDelete, onAddNew, shopName, initialDate, onClearTargetDate,
-    bookings = [], onEditBooking, onDeleteBooking, onConvertToBill, onAddNewBooking, initialTab = 'bills'
+    bookings = [], onEditBooking, onDeleteBooking, onConvertToBill, onAddNewBooking, initialTab = 'bills', onTabChange
 }) => {
   const [activeTab, setActiveTab] = useState<'bills' | 'bookings'>(initialTab);
   const [searchTerm, setSearchTerm] = useState('');
@@ -233,6 +234,11 @@ const BillList: React.FC<BillListProps> = ({
           onAddNew();
       }
   }
+
+  const handleTabSwitch = (tab: 'bills' | 'bookings') => {
+      setActiveTab(tab);
+      if (onTabChange) onTabChange(tab);
+  };
 
   // --- Filter and Sort Bills ---
   const filteredBills = useMemo(() => {
@@ -346,13 +352,13 @@ const BillList: React.FC<BillListProps> = ({
       {/* Tab Switcher */}
       <div className="flex p-1 bg-gray-100 rounded-2xl w-fit">
           <button
-            onClick={() => setActiveTab('bills')}
+            onClick={() => handleTabSwitch('bills')}
             className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'bills' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
           >
               Hóa Đơn
           </button>
           <button
-            onClick={() => setActiveTab('bookings')}
+            onClick={() => handleTabSwitch('bookings')}
             className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'bookings' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
           >
               Đặt Lịch
