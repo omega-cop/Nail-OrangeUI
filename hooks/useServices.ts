@@ -142,6 +142,10 @@ const useServices = () => {
       // Optional: Decide what to do with services in this category. 
       // Current behavior: They remain but categoryId points to nothing.
   }, []);
+  
+  const reorderCategories = useCallback((newCategories: ServiceCategory[]) => {
+      setCategories(newCategories);
+  }, []);
 
   const restoreCategories = useCallback((categoriesToRestore: ServiceCategory[]) => {
       setCategories(categoriesToRestore);
@@ -150,7 +154,7 @@ const useServices = () => {
 
   return { 
       services, addService, updateService, deleteService, restoreServices,
-      categories, addCategory, updateCategory, deleteCategory, restoreCategories
+      categories, addCategory, updateCategory, deleteCategory, restoreCategories, reorderCategories
   };
 };
 
