@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import type { PredefinedService, ServiceCategory, PriceVariant } from '../types';
 import { PencilIcon, TrashIcon, PlusIcon, Bars2Icon } from './icons';
@@ -314,7 +313,7 @@ const ServiceManager: React.FC<ServiceManagerProps> = ({
                                     <div className="flex flex-wrap items-center gap-2 mt-1">
                                         <p className="text-primary font-semibold">{displayPrice}</p>
                                         {service.allowQuantity && <span className="text-[10px] px-2 py-0.5 bg-indigo-50 text-indigo-600 rounded-full font-medium whitespace-nowrap">Đa số lượng</span>}
-                                        {service.priceType === 'variable' && <span className="text-[10px] px-2 py-0.5 bg-orange-50 text-orange-600 rounded-full font-medium whitespace-nowrap">Giá tùy chọn</span>}
+                                        {service.priceType === 'variable' && <span className="text-[10px] px-2 py-0.5 bg-pink-50 text-primary rounded-full font-medium whitespace-nowrap">Giá tùy chọn</span>}
                                     </div>
                                 </div>
                                 <div className="flex items-center space-x-1 shrink-0">
@@ -357,7 +356,7 @@ const ServiceManager: React.FC<ServiceManagerProps> = ({
                                 <td className="p-4 text-right font-medium text-text-main">{displayPrice}</td>
                                 <td className="p-4 text-center space-x-2">
                                     {service.allowQuantity && <span className="text-xs px-2 py-1 bg-indigo-50 text-indigo-600 rounded-full font-medium">Đa số lượng</span>}
-                                    {service.priceType === 'variable' && <span className="text-xs px-2 py-1 bg-orange-50 text-orange-600 rounded-full font-medium">Giá tùy chọn</span>}
+                                    {service.priceType === 'variable' && <span className="text-xs px-2 py-1 bg-pink-50 text-primary rounded-full font-medium">Giá tùy chọn</span>}
                                 </td>
                                 <td className="p-4">
                                     <div className="flex justify-center space-x-2">
