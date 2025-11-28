@@ -27,6 +27,7 @@ const useBookings = () => {
     const newBooking: Booking = {
       ...booking,
       id: 'booking-' + new Date().toISOString() + Math.random().toString(36).substr(2, 9),
+      createdAt: new Date().toISOString(), // Capture creation time
     };
     setBookings(prev => [newBooking, ...prev]);
   }, []);
