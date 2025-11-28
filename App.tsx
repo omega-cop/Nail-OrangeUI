@@ -303,13 +303,13 @@ const App: React.FC = () => {
   // Actual Save Handler
   const onSaveItem = (item: Bill) => {
       if (selectedBooking) {
-          updateBooking(item);
+          updateBooking(item as Booking); // Cast to Booking to fix TS error
       } else if (selectedBill) {
           updateBill(item);
       } else {
            // Creating New
            if (createModeRef.current === 'booking') {
-               addBooking(item);
+               addBooking(item as Booking); // Cast to Booking to fix TS error
            } else {
                addBill(item);
            }
