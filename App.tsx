@@ -439,6 +439,7 @@ const App: React.FC = () => {
             onCancel={handleCancel} 
             services={services} 
             customerNames={customerNames} 
+            customers={customers} // Pass full customers list
             categories={categories}
             isBooking={isBookingEditor}
         />;
@@ -763,14 +764,12 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      <div className="fixed bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-background to-transparent pointer-events-none z-40"></div>
-
-      <nav className={`fixed bottom-6 left-6 right-6 glass-card flex items-center justify-around z-50 h-[72px] rounded-[32px] shadow-floating transition-transform duration-500 px-2 ${isNavVisible ? 'translate-y-0' : 'translate-y-32'}`}>
-        <NavItem view="dashboard" label="Tổng Quan" icon={<HomeIcon className="w-6 h-6"/>} />
-        <NavItem view="list" label="Hóa Đơn" icon={<ListBulletIcon className="w-6 h-6"/>} />
-        <NavItem view="services" label="Dịch Vụ" icon={<TagIcon className="w-6 h-6"/>} />
-        <NavItem view="customers" label="Khách Hàng" icon={<UsersIcon className="w-6 h-6"/>} />
-      </nav>
+      <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-200 pb-safe pt-2 px-6 flex justify-between items-center z-50 shadow-top-nav">
+          <NavItem view="dashboard" label="Tổng Quan" icon={<HomeIcon className="w-6 h-6" />} />
+          <NavItem view="list" label="Hóa Đơn" icon={<ListBulletIcon className="w-6 h-6" />} />
+          <NavItem view="services" label="Dịch Vụ" icon={<TagIcon className="w-6 h-6" />} />
+          <NavItem view="customers" label="Khách Hàng" icon={<UsersIcon className="w-6 h-6" />} />
+      </div>
     </div>
   );
 };
