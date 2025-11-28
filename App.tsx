@@ -390,6 +390,11 @@ const App: React.FC = () => {
       }
   };
 
+  // Determine if we are editing a booking
+  // If selectedBooking is set, it's definitely a booking.
+  // If selectedBill is set, it's definitely NOT a booking (even if it came from one).
+  // If both are null, we rely on createModeRef.
+  const isBookingEditor = selectedBooking !== null || (!selectedBill && createModeRef.current === 'booking');
 
   const renderView = () => {
     switch (currentView) {
@@ -403,7 +408,7 @@ const App: React.FC = () => {
             services={services} 
             customerNames={customerNames} 
             categories={categories}
-            isBooking={selectedBooking !== null || createModeRef.current === 'booking'}
+            isBooking={isBookingEditor}
         />;
       case 'services':
         return <ServiceManager 
