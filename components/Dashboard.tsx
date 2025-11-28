@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import type { Bill } from '../types';
 import { isToday, isWithinThisWeek, isWithinThisMonth, formatCurrency } from '../utils/dateUtils';
@@ -26,10 +25,11 @@ const SummaryCard: React.FC<SummaryCardProps> = ({ title, amount, description, v
     let descColor = "text-gray-400";
 
     if (variant === 'primary') {
-        containerClasses = "p-6 rounded-3xl shadow-lg relative overflow-hidden bg-gradient-to-br from-[#F97316] to-[#FB923C] text-white";
-        titleColor = "text-orange-50";
+        // Updated to Pink Gradient
+        containerClasses = "p-6 rounded-3xl shadow-lg relative overflow-hidden bg-gradient-to-br from-[#f25fd2] to-[#ec4899] text-white";
+        titleColor = "text-pink-50";
         amountColor = "text-white";
-        descColor = "text-orange-100";
+        descColor = "text-pink-100";
     } else {
         containerClasses += " bg-white";
     }
@@ -160,7 +160,7 @@ const Dashboard: React.FC<DashboardProps> = ({ bills, onViewRevenueHistory }) =>
             <span>Biểu đồ doanh thu</span>
             <button
               onClick={onViewRevenueHistory}
-              className="text-xs font-semibold text-primary px-4 py-2 rounded-2xl bg-orange-50 hover:bg-orange-100 transition-colors"
+              className="text-xs font-semibold text-primary px-4 py-2 rounded-2xl bg-pink-50 hover:bg-pink-100 transition-colors"
             >
               Chi tiết
             </button>
@@ -190,11 +190,11 @@ const Dashboard: React.FC<DashboardProps> = ({ bills, onViewRevenueHistory }) =>
                         formatter={(value: number) => [formatCurrency(value), "Doanh thu"]} 
                         contentStyle={{ backgroundColor: '#fff', border: 'none', borderRadius: '16px', fontSize: '13px', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
                         labelStyle={{ fontWeight: 'bold', color: '#111827', marginBottom: '4px' }}
-                        cursor={{fill: '#FFF7ED', radius: 8}}
+                        cursor={{fill: '#FFF5FF', radius: 8}}
                       />
                       <Bar 
                         dataKey="revenue" 
-                        fill="#F97316" 
+                        fill="#f25fd2" 
                         name="Doanh thu" 
                         radius={[6, 6, 6, 6]} 
                         barSize={24} 
