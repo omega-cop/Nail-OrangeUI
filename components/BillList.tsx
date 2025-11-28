@@ -21,6 +21,7 @@ interface BillListProps {
   onDeleteBooking?: (id: string) => void;
   onConvertToBill?: (booking: Booking) => void;
   onAddNewBooking?: () => void; // New prop for adding booking
+  initialTab?: 'bills' | 'bookings'; // Control which tab is open by default
 }
 
 const PAGE_SIZE = 20;
@@ -38,9 +39,9 @@ const BillSkeleton = () => (
 
 const BillList: React.FC<BillListProps> = ({ 
     bills, onEdit, onDelete, onAddNew, shopName, initialDate, onClearTargetDate,
-    bookings = [], onEditBooking, onDeleteBooking, onConvertToBill, onAddNewBooking
+    bookings = [], onEditBooking, onDeleteBooking, onConvertToBill, onAddNewBooking, initialTab = 'bills'
 }) => {
-  const [activeTab, setActiveTab] = useState<'bills' | 'bookings'>('bills');
+  const [activeTab, setActiveTab] = useState<'bills' | 'bookings'>(initialTab);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDate, setFilterDate] = useState('');
   const [viewingBill, setViewingBill] = useState<Bill | null>(null);
@@ -61,6 +62,11 @@ const BillList: React.FC<BillListProps> = ({
       setFilterDate(initialDate);
     }
   }, [initialDate]);
+
+  // Sync activeTab with initialTab prop when it changes
+  useEffect(() => {
+      setActiveTab(initialTab);
+  }, [initialTab]);
 
   // Reset visible count when filters change
   useEffect(() => {
@@ -114,13 +120,6 @@ const BillList: React.FC<BillListProps> = ({
             onDeleteBooking(deleteConfirmId);
           }
           setDeleteConfirmId(null);
-      }
-  };
-
-  const handleConvertToBillClick = (e: React.MouseEvent, booking: Booking) => {
-      e.stopPropagation();
-      if (onConvertToBill) {
-          onConvertToBill(booking);
       }
   };
   
@@ -391,13 +390,6 @@ const BillList: React.FC<BillListProps> = ({
                                     <span className="font-bold text-gray-600 whitespace-nowrap text-base">{formatCurrency(booking.total)}</span>
                                     
                                     <div className="flex items-center gap-1">
-                                         <button 
-                                            onClick={(e) => handleConvertToBillClick(e, booking)} 
-                                            className="p-2 text-gray-400 hover:text-emerald-500 hover:bg-emerald-50 rounded-full transition-colors"
-                                            title="Chuyển thành hóa đơn"
-                                        >
-                                            <ArrowRightOnRectangleIcon className="w-5 h-5" />
-                                        </button>
                                         <button 
                                             onClick={(e) => { e.stopPropagation(); if (onEditBooking) onEditBooking(booking); }} 
                                             className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-full transition-colors"
