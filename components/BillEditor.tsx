@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Bill, ServiceItem, PredefinedService, ServiceCategory } from '../types';
 import { TrashIcon, ChevronDownIcon, ChevronUpIcon } from './icons';
@@ -298,7 +297,7 @@ const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, service
                         <li
                         key={index}
                         onClick={() => handleSuggestionClick(name)}
-                        className="px-4 py-2 hover:bg-orange-50 rounded-xl cursor-pointer text-sm"
+                        className="px-4 py-2 hover:bg-pink-50 rounded-xl cursor-pointer text-sm"
                         >
                         {name}
                         </li>
@@ -351,7 +350,7 @@ const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, service
             const isVariablePrice = serviceDef?.priceType === 'variable' && serviceDef.variants && serviceDef.variants.length > 0;
 
             return (
-              <div key={item.id} className="bg-gray-50 p-4 rounded-2xl border border-transparent hover:border-orange-100 transition-colors">
+              <div key={item.id} className="bg-gray-50 p-4 rounded-2xl border border-transparent hover:border-pink-100 transition-colors">
                 {/* Mobile Layout: Grid/Stack */}
                 <div className="grid grid-cols-1 gap-3 sm:hidden">
                     {/* Row 1: Service Selection */}
@@ -447,7 +446,7 @@ const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, service
               </div>
             );
         })}
-        <button type="button" onClick={addItem} className="w-full mt-2 px-4 py-3 text-primary border-2 border-dashed border-primary/30 rounded-2xl hover:bg-orange-50 hover:border-primary transition-colors font-semibold flex items-center justify-center gap-2">
+        <button type="button" onClick={addItem} className="w-full mt-2 px-4 py-3 text-primary border-2 border-dashed border-primary/30 rounded-2xl hover:bg-pink-50 hover:border-primary transition-colors font-semibold flex items-center justify-center gap-2">
           <span className="text-xl">+</span> Thêm Dịch Vụ
         </button>
       </div>
@@ -485,8 +484,8 @@ const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, service
           </div>
           
           <div className="flex justify-end mt-4">
-              <div className="bg-orange-50 px-6 py-4 rounded-2xl text-right">
-                  <span className="block text-xs text-orange-600 font-bold uppercase tracking-wider mb-1">Tổng cộng</span>
+              <div className="bg-pink-50 px-6 py-4 rounded-2xl text-right">
+                  <span className="block text-xs text-primary font-bold uppercase tracking-wider mb-1">Tổng cộng</span>
                   <span className="text-3xl font-bold text-primary">{formatCurrency(calculateTotal())}</span>
               </div>
           </div>
