@@ -1,4 +1,3 @@
-
 import React, { useMemo, useState, useEffect } from 'react';
 import type { Bill, Customer } from '../types';
 import { formatCurrency, formatDateTime } from '../utils/dateUtils';
@@ -25,8 +24,20 @@ interface CustomerListProps {
     customers: Customer[];
     onAddCustomer: (customer: Omit<Customer, 'id'>) => void;
     onUpdateCustomer: (customer: Customer) => void;
-    onDeleteCustomer: (id: string) => void;
+    onDeleteCustomer: (customer: CustomerStat) => void;
 }
+
+// Helper to display date only (DD/MM/YYYY) avoiding TZ issues
+const formatDateOnly = (dateStr: string) => {
+    if (!dateStr) return '---';
+    try {
+        const [year, month, day] = dateStr.split('-');
+        if(year && month && day) return `${day}/${month}/${year}`;
+        return dateStr;
+    } catch {
+        return dateStr;
+    }
+};
 
 const CustomerList: React.FC<CustomerListProps> = ({ 
     bills, customers, onAddCustomer, onUpdateCustomer, onDeleteCustomer 
@@ -254,7 +265,7 @@ interface CustomerDetailModalProps {
     customerStat: CustomerStat;
     onClose: () => void;
     onUpdate: (customer: Customer) => void;
-    onDelete: (id: string) => void;
+    onDelete: (customer: CustomerStat) => void;
     onCreate: (data: {name: string, phone: string, dob: string}) => void;
 }
 
@@ -276,9 +287,7 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ customerStat,
     };
 
     const handleDelete = () => {
-        if (customerStat.id) {
-            onDelete(customerStat.id);
-        }
+        onDelete(customerStat);
         setShowDeleteConfirm(false);
         onClose();
     };
@@ -313,7 +322,8 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ customerStat,
                              </div>
                              <div className="flex items-center gap-1">
                                  <CakeIcon className="w-4 h-4" />
-                                 <span>{customerStat.dob ? formatDateTime(customerStat.dob).split(',')[0] : '---'}</span>
+                                 {/* Use formatDateOnly here to remove time */}
+                                 <span>{formatDateOnly(customerStat.dob || '')}</span>
                              </div>
                          </div>
                      </div>
@@ -322,11 +332,10 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ customerStat,
                          <button onClick={() => setIsEditing(true)} className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow-sm text-sm font-semibold text-text-main hover:bg-gray-50">
                              <PencilIcon className="w-4 h-4 text-primary" /> Sửa
                          </button>
-                         {customerStat.id && (
-                             <button onClick={() => setShowDeleteConfirm(true)} className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow-sm text-sm font-semibold text-red-500 hover:bg-red-50">
-                                 <TrashIcon className="w-4 h-4" /> Xóa
-                             </button>
-                         )}
+                         {/* Always allow delete, even if just virtual customer */}
+                         <button onClick={() => setShowDeleteConfirm(true)} className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow-sm text-sm font-semibold text-red-500 hover:bg-red-50">
+                             <TrashIcon className="w-4 h-4" /> Xóa
+                         </button>
                      </div>
                 </div>
 
@@ -364,11 +373,15 @@ const CustomerDetailModal: React.FC<CustomerDetailModalProps> = ({ customerStat,
             {showDeleteConfirm && (
                 <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[80] p-4">
                     <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-floating">
-                        <h3 className="text-xl font-bold text-text-main mb-2">Xác nhận xóa</h3>
-                        <p className="text-text-light mb-6">Bạn có chắc chắn muốn xóa thông tin khách hàng này không? (Lịch sử giao dịch sẽ được giữ lại)</p>
+                        <h3 className="text-xl font-bold text-red-600 mb-2">CẢNH BÁO XÓA</h3>
+                        <p className="text-text-main mb-6 font-medium">
+                            Hành động này sẽ xóa vĩnh viễn hồ sơ khách hàng, <span className="text-red-600 font-bold uppercase">TẤT CẢ hóa đơn</span> và <span className="text-red-600 font-bold uppercase">lịch hẹn</span> liên quan đến khách hàng này.
+                            <br/><br/>
+                            Bạn có chắc chắn muốn tiếp tục không?
+                        </p>
                         <div className="flex justify-end gap-3">
                             <button onClick={() => setShowDeleteConfirm(false)} className="px-5 py-2.5 bg-gray-100 rounded-2xl font-bold text-text-main">Hủy</button>
-                            <button onClick={handleDelete} className="px-5 py-2.5 bg-red-500 text-white rounded-2xl font-bold shadow-lg shadow-red-500/30">Xóa</button>
+                            <button onClick={handleDelete} className="px-5 py-2.5 bg-red-600 text-white rounded-2xl font-bold shadow-lg shadow-red-600/30">Xóa Tất Cả</button>
                         </div>
                     </div>
                 </div>
