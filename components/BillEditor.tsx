@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import type { Bill, ServiceItem, PredefinedService, ServiceCategory } from '../types';
 import { TrashIcon, ChevronDownIcon, ChevronUpIcon } from './icons';
 import { getTodayDateString, formatCurrency, getCurrentTimeString } from '../utils/dateUtils';
@@ -211,11 +211,14 @@ const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, service
     }, 150);
   };
 
-  const inputBaseClasses = "w-full px-4 py-3 border-none rounded-2xl transition-all duration-200 outline-none text-text-main placeholder:text-gray-400 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-primary/20 shadow-sm";
+  // Sort services alphabetically for better UX
+  const sortedServices = useMemo(() => {
+    return [...services].sort((a, b) => a.name.localeCompare(b.name));
+  }, [services]);
 
-  const renderServiceOptions = () => {
+  const serviceOptions = useMemo(() => {
       if (!categories) {
-          return services.map(service => (
+          return sortedServices.map(service => (
               <option key={service.id} value={service.id}>{service.name}</option>
           ));
       }
@@ -224,7 +227,7 @@ const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, service
       categories.forEach(cat => groupedServices[cat.id] = []);
       groupedServices['uncategorized'] = [];
 
-      services.forEach(service => {
+      sortedServices.forEach(service => {
           if (service.categoryId && groupedServices[service.categoryId]) {
               groupedServices[service.categoryId].push(service);
           } else {
@@ -237,7 +240,7 @@ const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, service
               <option value="" disabled>-- Chọn dịch vụ --</option>
               {categories.map(cat => {
                   const catServices = groupedServices[cat.id];
-                  if (catServices.length === 0) return null;
+                  if (!catServices || catServices.length === 0) return null;
                   return (
                       <optgroup key={cat.id} label={cat.name}>
                           {catServices.map(service => (
@@ -255,7 +258,9 @@ const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, service
               )}
           </>
       );
-  };
+  }, [categories, sortedServices]);
+
+  const inputBaseClasses = "w-full px-4 py-3 border-none rounded-2xl transition-all duration-200 outline-none text-text-main placeholder:text-gray-400 bg-gray-50 focus:bg-white focus:ring-2 focus:ring-primary/20 shadow-sm";
 
   return (
     <form onSubmit={handleSubmit} className="max-w-2xl mx-auto bg-white p-6 sm:p-8 rounded-3xl shadow-card space-y-6">
@@ -356,7 +361,7 @@ const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, service
                       required
                       className="w-full px-4 py-3 border-none rounded-xl bg-white text-text-main shadow-sm outline-none focus:ring-2 focus:ring-primary/20"
                     >
-                      {renderServiceOptions()}
+                      {serviceOptions}
                     </select>
                     
                     {/* Row 2: Variant Selection (if applicable) */}
@@ -404,7 +409,7 @@ const BillEditor: React.FC<BillEditorProps> = ({ bill, onSave, onCancel, service
                         required
                         className="w-full px-4 py-2.5 border-none rounded-xl bg-white text-text-main shadow-sm outline-none focus:ring-2 focus:ring-primary/20"
                         >
-                        {renderServiceOptions()}
+                        {serviceOptions}
                         </select>
                         {isVariablePrice && (
                             <select 
