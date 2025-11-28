@@ -37,6 +37,100 @@ const BillSkeleton = () => (
     </div>
 );
 
+// New Component: Circular Progress Timer for Booking
+const BookingProgress: React.FC<{ targetDate: string }> = ({ targetDate }) => {
+    const [percentage, setPercentage] = useState(0);
+    const [color, setColor] = useState('text-blue-500');
+
+    useEffect(() => {
+        const updateProgress = () => {
+            const now = new Date().getTime();
+            const target = new Date(targetDate).getTime();
+            const diffMs = target - now;
+            
+            // Assume "Full" wait time is 24 hours for visualization (86400000 ms)
+            // If more than 24h, it's 0% (just started waiting/far away)
+            // If 0h, it's 100% (urgent)
+            const maxWait = 24 * 60 * 60 * 1000;
+            
+            // Calculate reverse percentage: Closer to target = Higher percentage
+            let percent = 0;
+            if (diffMs <= 0) {
+                percent = 100;
+            } else if (diffMs > maxWait) {
+                percent = 10; // Minimal indication for far future
+            } else {
+                percent = Math.min(100, Math.max(0, ((maxWait - diffMs) / maxWait) * 100));
+            }
+
+            setPercentage(percent);
+
+            // Determine color based on time remaining
+            const hoursLeft = diffMs / (1000 * 60 * 60);
+            
+            if (hoursLeft > 12) {
+                setColor('text-blue-500'); // 0-50% visual range (Far)
+            } else if (hoursLeft > 4) {
+                setColor('text-orange-500'); // 51-80% visual range (Medium)
+            } else {
+                setColor('text-red-500'); // 81-99% visual range (Close)
+            }
+        };
+
+        updateProgress();
+        const interval = setInterval(updateProgress, 60000); // Update every minute
+        return () => clearInterval(interval);
+    }, [targetDate]);
+
+    // SVG parameters
+    const radius = 20;
+    const stroke = 3;
+    const normalizedRadius = radius - stroke * 2;
+    const circumference = normalizedRadius * 2 * Math.PI;
+    const strokeDashoffset = circumference - (percentage / 100) * circumference;
+
+    return (
+        <div className="relative w-12 h-12 flex items-center justify-center">
+            <svg height={radius * 2} width={radius * 2} className="transform -rotate-90">
+                <circle
+                    stroke="#E5E7EB"
+                    strokeWidth={stroke}
+                    fill="transparent"
+                    r={normalizedRadius}
+                    cx={radius}
+                    cy={radius}
+                />
+                <circle
+                    stroke="currentColor"
+                    fill="transparent"
+                    strokeWidth={stroke}
+                    strokeDasharray={circumference + ' ' + circumference}
+                    style={{ strokeDashoffset, transition: 'stroke-dashoffset 0.5s ease-in-out' }}
+                    strokeLinecap="round"
+                    r={normalizedRadius}
+                    cx={radius}
+                    cy={radius}
+                    className={color}
+                />
+            </svg>
+             {/* Optional: Add a small dot or icon in center if needed, or keep clean */}
+            <div className={`absolute inset-0 flex items-center justify-center text-[10px] font-bold ${color}`}>
+                 {Math.round(percentage)}%
+            </div>
+        </div>
+    );
+};
+
+const formatBookingDateTime = (isoString: string): string => {
+    const date = new Date(isoString);
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${hours}:${minutes}, ${day}/${month}/${year}`;
+};
+
 const BillList: React.FC<BillListProps> = ({ 
     bills, onEdit, onDelete, onAddNew, shopName, initialDate, onClearTargetDate,
     bookings = [], onEditBooking, onDeleteBooking, onConvertToBill, onAddNewBooking, initialTab = 'bills'
@@ -369,9 +463,9 @@ const BillList: React.FC<BillListProps> = ({
                      groupedBookings[category].map(booking => (
                         <div key={booking.id} className="group bg-white p-4 rounded-3xl shadow-card hover:shadow-lg transition-all duration-300 border border-transparent hover:border-blue-200 relative overflow-hidden">
                              <div className="flex items-center gap-4">
-                                {/* Icon Avatar */}
-                                <div className="w-12 h-12 rounded-full flex items-center justify-center shrink-0 shadow-sm bg-blue-50 text-blue-500">
-                                    <ClockIcon className="w-6 h-6" />
+                                {/* Timer Progress Avatar */}
+                                <div className="shrink-0">
+                                    <BookingProgress targetDate={booking.date} />
                                 </div>
 
                                 {/* Info */}
@@ -379,15 +473,24 @@ const BillList: React.FC<BillListProps> = ({
                                     <div className="flex justify-between items-center mb-0.5">
                                         <h4 className="text-base font-bold text-text-main truncate">{booking.customerName}</h4>
                                     </div>
-                                    <div className="flex flex-col sm:flex-row sm:items-center text-xs text-text-light gap-1 sm:gap-3">
-                                        <span className="whitespace-nowrap font-bold text-blue-500">{formatDateTime(booking.date).split(' ')[1]}</span>
-                                        <p className="truncate opacity-80 sm:border-l sm:border-gray-200 sm:pl-3">{booking.items.map(i => i.name).join(', ')}</p>
+                                    <div className="flex flex-col text-xs text-text-light gap-1">
+                                        {/* Date and Time: HH:mm, dd/MM/yyyy */}
+                                        <span className="font-bold text-blue-500">
+                                            {formatBookingDateTime(booking.date)}
+                                        </span>
+                                        {/* Service list: separated by commas, full text */}
+                                        <p className="opacity-80 whitespace-normal line-clamp-2 leading-relaxed">
+                                            {booking.items.map(i => i.name).join(', ')}
+                                        </p>
                                     </div>
                                 </div>
 
                                 {/* Actions */}
                                 <div className="flex items-center gap-3 sm:gap-5 shrink-0 pl-2">
-                                    <span className="font-bold text-gray-600 whitespace-nowrap text-base">{formatCurrency(booking.total)}</span>
+                                    <div className="flex flex-col items-end">
+                                        <span className="font-bold text-gray-600 whitespace-nowrap text-base">{formatCurrency(booking.total)}</span>
+                                        {booking.note && <span className="text-[10px] text-gray-400 italic max-w-[80px] truncate">{booking.note}</span>}
+                                    </div>
                                     
                                     <div className="flex items-center gap-1">
                                         <button 
