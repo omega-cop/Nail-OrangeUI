@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import type { Bill, Booking, View } from './types';
 import useBills from './hooks/useBills';
@@ -490,14 +491,14 @@ const App: React.FC = () => {
   const NavItem: React.FC<{ view: View; label: string; icon: React.ReactNode }> = ({ view, label, icon }) => (
     <button
       onClick={() => setCurrentView(view)}
-      className={`flex flex-col items-center justify-center w-full p-2 transition-all duration-300 relative ${
+      className={`flex flex-col items-center justify-center w-full p-1 transition-all duration-300 ${
         currentView === view ? 'text-primary' : 'text-gray-400 hover:text-primary/70'
       }`}
     >
-      <div className={`p-2 rounded-2xl transition-all duration-300 ${currentView === view ? 'bg-pink-50 -translate-y-2 shadow-sm' : ''}`}>
+      <div className={`p-1.5 rounded-2xl transition-all duration-300 ${currentView === view ? 'bg-pink-50 transform scale-105' : 'bg-transparent'}`}>
         {icon}
       </div>
-      <span className={`text-[10px] font-medium transition-all ${currentView === view ? 'opacity-100 font-bold translate-y-[-4px]' : 'opacity-0 h-0 overflow-hidden'}`}>{label}</span>
+      <span className={`text-[10px] font-medium mt-1 transition-all ${currentView === view ? 'font-bold' : 'font-medium'}`}>{label}</span>
     </button>
   );
 
@@ -764,11 +765,15 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-gray-200 pb-safe pt-2 px-6 flex justify-between items-center z-50 shadow-top-nav">
-          <NavItem view="dashboard" label="Tổng Quan" icon={<HomeIcon className="w-6 h-6" />} />
-          <NavItem view="list" label="Hóa Đơn" icon={<ListBulletIcon className="w-6 h-6" />} />
-          <NavItem view="services" label="Dịch Vụ" icon={<TagIcon className="w-6 h-6" />} />
-          <NavItem view="customers" label="Khách Hàng" icon={<UsersIcon className="w-6 h-6" />} />
+      <div className="fixed bottom-0 left-0 right-0 z-50 pb-safe pointer-events-none flex justify-center">
+          <div className="p-4 w-full max-w-lg flex justify-center pointer-events-auto">
+             <div className="bg-white/80 backdrop-blur-xl border border-white/50 shadow-floating rounded-3xl px-6 py-2.5 w-full flex justify-between items-center">
+                <NavItem view="dashboard" label="Tổng Quan" icon={<HomeIcon className="w-6 h-6" />} />
+                <NavItem view="list" label="Hóa Đơn" icon={<ListBulletIcon className="w-6 h-6" />} />
+                <NavItem view="services" label="Dịch Vụ" icon={<TagIcon className="w-6 h-6" />} />
+                <NavItem view="customers" label="Khách Hàng" icon={<UsersIcon className="w-6 h-6" />} />
+             </div>
+          </div>
       </div>
     </div>
   );
