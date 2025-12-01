@@ -765,7 +765,7 @@ const App: React.FC = () => {
         </div>
       </main>
 
-      <div className="fixed bottom-0 left-0 right-0 z-50 pb-safe pointer-events-none flex justify-center">
+      <div className={`fixed bottom-0 left-0 right-0 z-50 pb-safe pointer-events-none flex justify-center transition-transform duration-300 ${isNavVisible ? 'translate-y-0' : 'translate-y-full'}`}>
           <div className="p-4 w-full max-w-lg flex justify-center pointer-events-auto">
              <div className="bg-white/80 backdrop-blur-xl border border-white/50 shadow-floating rounded-3xl px-6 py-2.5 w-full flex justify-between items-center">
                 <NavItem view="dashboard" label="Tổng Quan" icon={<HomeIcon className="w-6 h-6" />} />
